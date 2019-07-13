@@ -14,6 +14,6 @@ namespace math {
 
 //  implement with cuSPARSE cusparseSpMM
 template <typename T>
-void spgematmul(T alpha, sparseMatrix<T> &A, bool transpo_A, Tensor<T> *B, bool transpo_B, Tensor<T> *C);
-}
+void spgematmul(T alpha, bool trans_A, sparseMatrix<T> *A, bool trans_B, Tensor<T> *B, T beta, Tensor<T> *C);
+}  // namespace math
 }  // namespace magmadnn

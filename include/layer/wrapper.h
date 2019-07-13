@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+#include <cstdio>
 #include "compute/operation.h"
 #include "layer/layers.h"
 
@@ -22,6 +23,8 @@ class layerContainer : public std::vector<Layer<T> *> {
     inline op::Operation<T> *tail() { return this->getLastLayerOutput(); };
 
     layerContainer<T> &appendLayer(Layer<T> *layerPtr);
+
+	void summary(void);
 
     void destroyLayers();
 };

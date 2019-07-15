@@ -12,6 +12,7 @@
 #if defined(_HAS_CUDA_)
 #include "cublas_v2.h"
 #include "cudnn.h"
+#include "cusparse.h"
 #endif
 
 namespace magmadnn {
@@ -33,6 +34,7 @@ struct magmadnn_settings_t {
 #if defined(_HAS_CUDA_)
     cudnnHandle_t cudnn_handle;
     cublasHandle_t cublas_handle;
+	cusparseHandle_t cusparse_handle;
 #endif
 };
 namespace internal {
@@ -52,5 +54,14 @@ struct tensor_filler_t {
     tensor_fill_t fill_type;
     std::vector<T> values;
 };
+
+typedef enum spMatrix_format {
+	SPARSEMATRIX_FORMAT_HOST_CSR,
+	SPARSEMATRIX_FORMAT_HOST_DENSE, 
+#if defined(_HAS_CUDA_)
+	SPARSEMATRIX_FORMAT_CUSPARSE_DENSE, 
+	SPARSEMATRIX_FORMAT_CUSPARSE_CSR
+#endif
+} spMatrix_format;
 
 }  // namespace magmadnn

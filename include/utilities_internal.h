@@ -47,6 +47,14 @@ inline void curandAssert(curandStatus_t code, const char *file, int line, bool a
     }
 }
 
+#define cusparseErrchk(ans) \
+    { cusparseAssert((ans), __FILE__, __LINE__); }
+inline void cusparseAssert(cusparseStatus_t code, const char* file, int line, bool abort = true) {
+	if (code != CUSPARSE_STATUS_SUCCESS) {
+		fprintf(stderr, "CuSparseAssert: %d %s %d\n", code, file, line);
+	}
+}
+
 #endif
 
 #define T_IS_SCALAR(tensor_ptr) ((tensor_ptr)->get_size() == 1)

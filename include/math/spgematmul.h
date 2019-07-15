@@ -1,9 +1,11 @@
 #pragma once
 
+#include <cassert>
 #include <cstdio>
 #include "compute/operation.h"
 #include "compute/variable.h"
 #include "graph/graph.h"
+#include "utilities_internal.h"
 
 #if defined(_HAS_CUDA_)
 #include "cusparse.h"
@@ -12,8 +14,25 @@
 namespace magmadnn {
 namespace math {
 
-//  implement with cuSPARSE cusparseSpMM
 template <typename T>
-void spgematmul(T alpha, bool trans_A, sparseMatrix<T> *A, bool trans_B, Tensor<T> *B, T beta, Tensor<T> *C);
+void spgematmul(bool trans_A, spMatrix::sparseMatrix<T>* A, bool trans_B, spMatrix::spMatrix_DENSE<T>* B,
+                spMatrix::spMatrix_DENSE<T>* C);
+
+#if defined(_HAS_CUDA_)
+struct spgemm_cusparse_settings {
+    cusparseSpMMAlg_t algo;
+    void* workspace;
+    size_t workspace_size;
+};
+
+//  implement with cuSPARSE cusparseSpMM
+//  assume settings holds enough space for computation
+template <typename T>
+void spgematmul_cusparse(bool trans_A, spMatrix::cusparseSpMatrix_CSR<T>* A, bool trans_B,
+                         spMatrix::cusparseSpMatrix_DENSE<T>* B, spMatrix::cusparseSpMatrix_DENSE<T>* C,
+                         spgemm_cusparse_settings settings);
+
+#endif
+
 }  // namespace math
 }  // namespace magmadnn

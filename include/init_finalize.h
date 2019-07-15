@@ -13,6 +13,7 @@
 #if defined(_HAS_CUDA_)
 #include "cublas_v2.h"
 #include "magma.h"
+#include "cusparse.h"
 #endif
 
 namespace magmadnn {

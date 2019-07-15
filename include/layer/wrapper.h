@@ -1,7 +1,7 @@
 #pragma once
 
-#include <vector>
 #include <cstdio>
+#include <vector>
 #include "compute/operation.h"
 #include "layer/layers.h"
 
@@ -24,7 +24,7 @@ class layerContainer : public std::vector<Layer<T> *> {
 
     layerContainer<T> &appendLayer(Layer<T> *layerPtr);
 
-	void summary(void);
+    void summary(void) const;
 
     void destroyLayers();
 };

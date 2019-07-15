@@ -29,6 +29,9 @@ magmadnn_error_t magmadnn_init() {
     /* init cublas */
     cublasCreate(&internal::MAGMADNN_SETTINGS->cublas_handle);
 
+	/* init cusparse */
+	cusparseCreate(&internal::MAGMADNN_SETTINGS->cusparse_handle);
+
     internal::MAGMADNN_SETTINGS->n_devices = 1; /* TODO : read in number of devices */
 #endif
 
@@ -46,6 +49,10 @@ magmadnn_error_t magmadnn_finalize() {
 
     /* destroy cublas */
     cublasDestroy(internal::MAGMADNN_SETTINGS->cublas_handle);
+
+	/* destory cusparse */
+	cusparseDestroy(internal::MAGMADNN_SETTINGS->cusparse_handle);
+
 #endif
 
     /* delete settings */

@@ -54,7 +54,7 @@ class sparseMatrix {
     inline memory_t get_memory_type(void) { return mem_type; }
     //  writes the (uncompressed) adjacency matrix into output
     //  output must have the same shape with this object
-    virtual void get_adjMat(Tensor<T>* output) const = 0;
+    virtual void get_uncompressed_mat(Tensor<T>* output) const = 0;
 };
 
 //  abstract base class for sparse matrix in dense format
@@ -75,7 +75,7 @@ class spMatrix_DENSE : public sparseMatrix<T> {
     virtual ~spMatrix_DENSE(void) = 0;
     //  writes the (uncompressed) adjacency matrix into output
     //  output must have the same shape with this object
-    inline void get_adjMat(Tensor<T>* output) const {
+    inline void get_uncompressed_mat(Tensor<T>* output) const {
         T_IS_MATRIX(output);
         assert(output->get_shape[0] == dim0);
         assert(output->get_shape[1] == dim1);
@@ -112,7 +112,7 @@ class spMatrix_CSR : public sparseMatrix<T> {
     inline memory_t get_memory_type(void) const { return mem_type; }
     //  writes the (uncompressed) adjacency matrix into output
     //  output must have the same shape with this object
-    void get_adjMat(Tensor<T>* output) const;
+    void get_uncompressed_mat(Tensor<T>* output) const;
 };
 
 //  concrete class for sparse matrix in dense format on host memory
@@ -148,19 +148,19 @@ template <typename T>
 class cusparseSpMatrix_DENSE : public spMatrix_DENSE<T> {
    public:
     cusparseSpMatrix_DENSE(void);
-    cusparseSpMatrix_DENSE(const Tensor<T>* adjMatrixTensorPtr, memory_t mem_type = HOST);
+    cusparseSpMatrix_DENSE(const Tensor<T>* adjMatrixTensorPtr, memory_t mem_type = MANAGED);
     cusparseSpMatrix_DENSE(const cusparseSpMatrix_DENSE<T>& that);
     cusparseSpMatrix_DENSE<T>& operator=(const cusparseSpMatrix_DENSE<T>& that);
     ~cusparseSpMatrix_DENSE(void);
 };
 
 //  concrete class for sparse matrix in CSR format in GPU memory
-//  wrapper for cusparseSpMatDescr_t
+//  wrapper for cusparseSpMatDescr_t with format CSR
 template <typename T>
 class cusparseSpMatrix_CSR : public spMatrix_CSR<T> {
    public:
     cusparseSpMatrix_CSR(void);
-    cusparseSpMatrix_CSR(const Tensor<T>* adjMatrixTensorPtr, memory_t mem_type = HOST);
+    cusparseSpMatrix_CSR(const Tensor<T>* adjMatrixTensorPtr, memory_t mem_type = MANAGED);
     cusparseSpMatrix_CSR(const cusparseSpMatrix_CSR<T>& that);
     cusparseSpMatrix_CSR<T>& operator=(const cusparseSpMatrix_CSR<T>& that);
     ~cusparseSpMatrix_CSR(void);

@@ -28,17 +28,11 @@ void spgematmul(bool trans_A, spMatrix::sparseMatrix<T>* A, bool trans_B, spMatr
 }
 
 #if defined(_HAS_CUDA_)
-
-//  todo: check if cusparse can only use mat on host
-
 //  explicit instantiation for type int, float, double
 template <>
 void spgematmul_cusparse<int>(bool trans_A, spMatrix::cusparseSpMatrix_CSR<int>* A, bool trans_B,
                               spMatrix::cusparseSpMatrix_DENSE<int>* B, spMatrix::cusparseSpMatrix_DENSE<int>* C,
                               spgemm_cusparse_settings settings) {
-    assert(A->get_memory_type() == HOST);
-    assert(B->get_memory_type() == HOST);
-    assert(C->get_memory_type() == HOST);
     int alpha = 1, beta = 0;
     cusparseErrchk(cusparseSpMM(::magmadnn::internal::MAGMADNN_SETTINGS->cusparse_handle,
                                 trans_A ? CUSPARSE_OPERATION_TRANSPOSE : CUSPARSE_OPERATION_NON_TRANSPOSE,
@@ -53,9 +47,6 @@ template <>
 void spgematmul_cusparse<float>(bool trans_A, spMatrix::cusparseSpMatrix_CSR<float>* A, bool trans_B,
                                 spMatrix::cusparseSpMatrix_DENSE<float>* B, spMatrix::cusparseSpMatrix_DENSE<float>* C,
                                 spgemm_cusparse_settings settings) {
-    assert(A->get_memory_type() == HOST);
-    assert(B->get_memory_type() == HOST);
-    assert(C->get_memory_type() == HOST);
     int alpha = 1, beta = 0;
     cusparseErrchk(cusparseSpMM(::magmadnn::internal::MAGMADNN_SETTINGS->cusparse_handle,
                                 trans_A ? CUSPARSE_OPERATION_TRANSPOSE : CUSPARSE_OPERATION_NON_TRANSPOSE,
@@ -70,9 +61,6 @@ template <>
 void spgematmul_cusparse<double>(bool trans_A, spMatrix::cusparseSpMatrix_CSR<double>* A, bool trans_B,
                                  spMatrix::cusparseSpMatrix_DENSE<double>* B,
                                  spMatrix::cusparseSpMatrix_DENSE<double>* C, spgemm_cusparse_settings settings) {
-    assert(A->get_memory_type() == HOST);
-    assert(B->get_memory_type() == HOST);
-    assert(C->get_memory_type() == HOST);
     int alpha = 1, beta = 0;
     cusparseErrchk(cusparseSpMM(::magmadnn::internal::MAGMADNN_SETTINGS->cusparse_handle,
                                 trans_A ? CUSPARSE_OPERATION_TRANSPOSE : CUSPARSE_OPERATION_NON_TRANSPOSE,

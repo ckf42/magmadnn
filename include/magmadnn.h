@@ -38,3 +38,5 @@
 #include "optimizer/optimizers.h"
 
 #include "dataloader/dataloaders.h"
+
+#include "sparseMatrix/sparseMatrix.h"

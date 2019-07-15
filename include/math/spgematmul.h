@@ -2,6 +2,7 @@
 
 #include <cassert>
 #include <cstdio>
+#include "sparseMatrix/sparseMatrix.h"
 #include "compute/operation.h"
 #include "compute/variable.h"
 #include "graph/graph.h"
@@ -26,7 +27,7 @@ struct spgemm_cusparse_settings {
 };
 
 //  implement with cuSPARSE cusparseSpMM
-//  assume settings holds enough space for computation
+//  assume settings.workspace holds enough space for computation
 template <typename T>
 void spgematmul_cusparse(bool trans_A, spMatrix::cusparseSpMatrix_CSR<T>* A, bool trans_B,
                          spMatrix::cusparseSpMatrix_DENSE<T>* B, spMatrix::cusparseSpMatrix_DENSE<T>* C,

@@ -71,8 +71,8 @@ graph<T>::~graph(void) {
 
 template <typename T>
 void graph<T>::get_laplancian(Tensor<T>* output) const {
-    adjMatrix->get_adjMat(output);
-    //  todo: how to negate output fast, use scalar_tensor_multiplication or change get_adjMat?
+    adjMatrix->get_uncompressed_mat(output);
+    //  todo: how to negate output fast, use scalar_tensor_multiplication or change get_uncompressed_mat?
 }
 
 template <typename T>

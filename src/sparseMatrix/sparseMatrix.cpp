@@ -82,7 +82,7 @@ spMatrix_CSR<T>::spMatrix_CSR(const Tensor<T>* adjMatrixTensorPtr, memory_t mem_
     }
 }
 template <typename T>
-void spMatrix_CSR<T>::get_adjMat(Tensor<T>* output) const {
+void spMatrix_CSR<T>::get_uncompressed_mat(Tensor<T>* output) const {
     T_IS_MATRIX(output);
     assert(output->get_shape[0] == dim0);
     assert(output->get_shape[1] == dim1);

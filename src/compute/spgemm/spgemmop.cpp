@@ -1,4 +1,4 @@
-#include "spgemmop.h"
+#include "compute/spgemm/spgemmop.h"
 
 namespace magmadnn{
 namespace op{

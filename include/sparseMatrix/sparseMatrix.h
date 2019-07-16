@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <string>
 #include <vector>
 
 #include "tensor/tensor.h"
@@ -55,6 +56,8 @@ class sparseMatrix {
     //  writes the (uncompressed) adjacency matrix into output
     //  output must have the same shape with this object
     virtual void get_uncompressed_mat(Tensor<T>* output) const = 0;
+
+    std::string to_string(void) const {return "spMat(" + dim0 + " x " + dim1 + ")"};
 };
 
 //  abstract base class for sparse matrix in dense format
@@ -67,6 +70,8 @@ class spMatrix_DENSE : public sparseMatrix<T> {
     spMatrix_DENSE<T>& operator=(const spMatrix_DENSE<T>& that) = delete;  //  no assignment for abstract class
    protected:
     Tensor<T> data;  //  the whole adjacency matix
+	//  returns the pointer to the data
+	inline Tensor<T>* get_data_ptr(void) const { return &data; }
    public:
 #if defined(DEBUG)
     spMatrix_DENSE(void);
@@ -120,10 +125,9 @@ class spMatrix_CSR : public sparseMatrix<T> {
 template <typename T>
 class hostSpMatrix_DENSE : public spMatrix_DENSE<T> {
    public:
-    hostSpMatrix_DENSE(void);
     hostSpMatrix_DENSE(const Tensor<T>* adjMatrixTensorPtr);
-    hostSpMatrix_DENSE(const hostSpMatrix_DENSE& that);
-    hostSpMatrix_DENSE<T>& operator=(const hostSpmatrix_DENSE<T>& that);
+    hostSpMatrix_DENSE(const hostSpMatrix_DENSE<T>& that);
+	hostSpMatrix_DENSE<T>& operator=(const hostSpMatrix_DENSE<T>& that);
     ~hostSpMatrix_DENSE(void);
 };
 
@@ -131,7 +135,6 @@ class hostSpMatrix_DENSE : public spMatrix_DENSE<T> {
 template <typename T>
 class hostSpMatrix_CSR : public spMatrix_CSR<T> {
    public:
-    hostSpMatrix_CSR(void);
     hostSpMatrix_CSR(const Tensor<T>* adjMatrixTensorPtr);
     hostSpMatrix_CSR(const hostSpMatrix_CSR& that);
     hostSpMatrix_CSR<T>& operator=(const hostSpMatrix_CSR<T>& that);
@@ -147,7 +150,6 @@ class hostSpMatrix_CSR : public spMatrix_CSR<T> {
 template <typename T>
 class cusparseSpMatrix_DENSE : public spMatrix_DENSE<T> {
    public:
-    cusparseSpMatrix_DENSE(void);
     cusparseSpMatrix_DENSE(const Tensor<T>* adjMatrixTensorPtr, memory_t mem_type = MANAGED);
     cusparseSpMatrix_DENSE(const cusparseSpMatrix_DENSE<T>& that);
     cusparseSpMatrix_DENSE<T>& operator=(const cusparseSpMatrix_DENSE<T>& that);
@@ -159,7 +161,6 @@ class cusparseSpMatrix_DENSE : public spMatrix_DENSE<T> {
 template <typename T>
 class cusparseSpMatrix_CSR : public spMatrix_CSR<T> {
    public:
-    cusparseSpMatrix_CSR(void);
     cusparseSpMatrix_CSR(const Tensor<T>* adjMatrixTensorPtr, memory_t mem_type = MANAGED);
     cusparseSpMatrix_CSR(const cusparseSpMatrix_CSR<T>& that);
     cusparseSpMatrix_CSR<T>& operator=(const cusparseSpMatrix_CSR<T>& that);

@@ -28,6 +28,12 @@ void spgematmul(bool trans_A, spMatrix::sparseMatrix<T>* A, bool trans_B, spMatr
 }
 
 #if defined(_HAS_CUDA_)
+template <typename T>
+void spgematmul_cusparse(bool trans_A, spMatrix::cusparseSpMatrix_CSR<T>* A, bool trans_B,
+                         spMatrix::cusparseSpMatrix_DENSE<T>* B, spMatrix::cusparseSpMatrix_DENSE<T>* C,
+                         spgemm_cusparse_settings settings) {
+    fprintf(stderr, "Data type not recongnized.\n");
+}
 //  explicit instantiation for type int, float, double
 template <>
 void spgematmul_cusparse<int>(bool trans_A, spMatrix::cusparseSpMatrix_CSR<int>* A, bool trans_B,
@@ -42,7 +48,6 @@ void spgematmul_cusparse<int>(bool trans_A, spMatrix::cusparseSpMatrix_CSR<int>*
                                 *reinterpret_cast<cusparseDnMatDescr_t*>(C->get_desc()), CUDA_R_32I, settings.algo,
                                 settings.workspace));
 }
-
 template <>
 void spgematmul_cusparse<float>(bool trans_A, spMatrix::cusparseSpMatrix_CSR<float>* A, bool trans_B,
                                 spMatrix::cusparseSpMatrix_DENSE<float>* B, spMatrix::cusparseSpMatrix_DENSE<float>* C,
@@ -56,7 +61,6 @@ void spgematmul_cusparse<float>(bool trans_A, spMatrix::cusparseSpMatrix_CSR<flo
                                 *reinterpret_cast<cusparseDnMatDescr_t*>(C->get_desc()), CUDA_R_32F, settings.algo,
                                 settings.workspace));
 }
-
 template <>
 void spgematmul_cusparse<double>(bool trans_A, spMatrix::cusparseSpMatrix_CSR<double>* A, bool trans_B,
                                  spMatrix::cusparseSpMatrix_DENSE<double>* B,
@@ -70,7 +74,6 @@ void spgematmul_cusparse<double>(bool trans_A, spMatrix::cusparseSpMatrix_CSR<do
                                 *reinterpret_cast<cusparseDnMatDescr_t*>(C->get_desc()), CUDA_R_64F, settings.algo,
                                 settings.workspace));
 }
-
 #endif
 
 }  // namespace math

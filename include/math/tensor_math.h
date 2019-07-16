@@ -19,6 +19,7 @@
 #include "math/pow.h"
 #include "math/relu.h"
 #include "math/scalar_tensor_product.h"
+#include "math/spgematmul.h"
 #include "math/sum.h"
 #include "math/tile.h"
 #include "reduce_sum.h"

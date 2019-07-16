@@ -39,13 +39,14 @@ spMatrix_DENSE<T>::spMatrix_DENSE(const Tensor<T>* adjMatrixTensorPtr, memory_t 
     data.copy_from(*adjMatrixTensorPtr);
 }
 template <typename T>
-spMatrix_DENSE<T>::~spMatrix_DENSE(void) { /* empty */
+spMatrix_DENSE<T>::~spMatrix_DENSE(void) { 
+	/* empty */
 }
 
 //  for abstract class spMatrix_CSR
 #if defined(DEBUG)
 template <typename T>
-spMatrix_CSR<T>::spMatrix_CSR(void) : sparseMatrix(void), nnz(0), valList({0, 0}), rowCount({0, 0}), colIdx({0, 0}) : {
+spMatrix_CSR<T>::spMatrix_CSR(void) : sparseMatrix(void), nnz(0), valList({0, 0}), rowCount({0, 0}), colIdx({0, 0}) {
     fprintf(stderr, "Constructor for spMatrix_CSR called without parameters.\n");
 }
 #endif
@@ -61,9 +62,9 @@ spMatrix_CSR<T>::spMatrix_CSR(const Tensor<T>* adjMatrixTensorPtr, memory_t mem_
         rowCounter = 0;
         for (unsigned i = 0; i < dim0; i++) {
             if (adjMatrixTensorPtr->get({i, j}) != T(0)) {
-                                                nonzeroEleV.push_back(adjMatrixTensorPtr->get({ i, j });
-						colIdxV.push_back(i);
-						++rowCounter;
+                                nonzeroEleV.push_back(adjMatrixTensorPtr->get({ i, j }); 
+				colIdxV.push_back(i); 
+				++rowCounter;
             }
         }
         rowAccV.push_back(rowCounter);
@@ -99,15 +100,14 @@ void spMatrix_CSR<T>::get_uncompressed_mat(Tensor<T>* output) const {
 }
 template <typename T>
 spMatrix_CSR<T>::~spMatrix_CSR(void) {
-    delete valPtr;
-    delete rowPtr;
-    delete colIdx;
+	/* empty */
 }
 
 //  for concrete class hostSpMatrix_DENSE
 template <typename T>
 hostSpMatrix_DENSE<T>::hostSpMatrix_DENSE(const Tensor<T>* adjMatrixTensorPtr)
-    : spMatrix_DENSE<T>(adjMatrixTensorPtr, HOST, SPARSEMATRIX_FORMAT_HOST_DENSE) { /* empty */
+    : spMatrix_DENSE<T>(adjMatrixTensorPtr, HOST, SPARSEMATRIX_FORMAT_HOST_DENSE) {
+    /* empty */
 }
 //  explicit instantiation for type int, float, double
 template class hostSpMatrix_DENSE<int>;
@@ -117,7 +117,8 @@ template class hostSpMatrix_DENSE<double>;
 //  for concrete class hostSpMatrix_CSR
 template <typename T>
 hostSpMatrix_CSR<T>::hostSpMatrix_CSR(const Tensor<T>* adjMatrixTensorPtr)
-    : spMatrix_CSR<T>(adjMatrixTensorPtr, HOST, SPARSEMATRIX_FORMAT_HOST_CSR) { /* empty */
+    : spMatrix_CSR<T>(adjMatrixTensorPtr, HOST, SPARSEMATRIX_FORMAT_HOST_CSR) {
+	/* empty */
 }
 //  explicit instantiation for type int, float, double
 template class hostSpMatrix_CSR<int>;

@@ -1,8 +1,9 @@
+#if defined(DEV_FLAG)
 #include "graph/graph.h"
 namespace magmadnn {
 
 template <typename T>
-static unsigned graph<T>::getE(const Tensor<T>* adjMatrixTensorPtr) {
+unsigned graph<T>::getE(const Tensor<T>* adjMatrixTensorPtr) {
     unsigned counter = 0;
     T edge_weight, opposite_edge_weight;
     for (unsigned i = 0; i < V - 1; ++i) {
@@ -85,3 +86,4 @@ template class graph<float>;
 template class graph<double>;
 
 }  // namespace magmadnn
+#endif

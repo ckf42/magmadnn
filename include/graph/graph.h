@@ -1,3 +1,4 @@
+#if defined(DEV_FLAG)
 #pragma once
 
 #include <cassert>
@@ -37,3 +38,4 @@ class graph {
 };
 
 }  // namespace magmadnn
+#endif

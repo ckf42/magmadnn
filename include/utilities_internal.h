@@ -20,6 +20,7 @@
 #include <cuda_runtime_api.h>
 #include <curand.h>
 #include "cudnn.h"
+#include "cusparse.h"
 
 #define cudaErrchk(ans) \
     { cudaAssert((ans), __FILE__, __LINE__); }
@@ -68,6 +69,8 @@ inline void cusparseAssert(cusparseStatus_t code, const char* file, int line, bo
 
 #define T_IS_SAME_MEMORY_TYPE(x_ptr, y_ptr) ((x_ptr)->get_memory_type() == (y_ptr)->get_memory_type())
 #define OP_IS_SAME_MEMORY_TYPE(x_ptr, y_ptr) ((x_ptr)->get_memory_type() == (y_ptr)->get_memory_type())
+
+#define AS_TYPE(type_name, var) (reinterpret_cast<type_name>(var))
 
 namespace magmadnn {
 namespace internal {

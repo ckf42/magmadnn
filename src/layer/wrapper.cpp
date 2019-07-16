@@ -36,8 +36,8 @@ layerContainer<T> &layerContainer<T>::appendLayer(layer::Layer<T> *layerPtr) {
 
 template <typename T>
 void layerContainer<T>::summary(void) const {
-    for (typename layerContainer<T>::const_iterator iter = this->begin(); ++iter) {
-        printf("Layer %uz: %s\n", idx, (*iter)->get_name());
+    for (typename layerContainer<T>::size_type idx = 0; idx != this->size(); ++idx) {
+        printf("Layer %zu: %s\n", idx, (this->operator[](idx)->get_name()).c_str());
     }
 }
 

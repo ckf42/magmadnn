@@ -2,9 +2,9 @@
 
 #include <cassert>
 #include <cstdio>
-#include "sparseMatrix/sparseMatrix.h"
 #include "compute/operation.h"
 #include "compute/variable.h"
+#include "sparseMatrix/sparseMatrix.h"
 #include "utilities_internal.h"
 
 #if defined(_HAS_CUDA_)
@@ -14,10 +14,12 @@
 namespace magmadnn {
 namespace math {
 
-//  compute C = alpha*op(A)*op(B)+beta*C, A must be of sparse class, B, C must be of dense class
+//  compute C = alpha*op(A)*op(B)+beta*C
+//  B, C must be of dense class
 //  determine which routine to use by format of A
 template <typename T>
-void spgematmul(T alpha, bool trans_A, spMatrix::sparseMatrix<T>* A, bool trans_B, spMatrix::spMatrix_DENSE<T>* B, T beta, spMatrix::spMatrix_DENSE<T>* C, void* settings = nullptr);
+void spgematmul(T alpha, bool trans_A, spMatrix::sparseMatrix<T>* A, bool trans_B, spMatrix::spMatrix_DENSE<T>* B,
+                T beta, spMatrix::spMatrix_DENSE<T>* C, void* settings = nullptr);
 
 #if defined(_HAS_CUDA_)
 struct spgemm_cusparse_settings {

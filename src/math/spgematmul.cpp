@@ -19,15 +19,18 @@ void spgematmul(T alpha, bool trans_A, spMatrix::sparseMatrix<T>* A, bool trans_
         std::fprintf(stderr, "Spgemm for host_dense is not yet implemented\n");
     }
 #if defined(_HAS_CUDA_)
-    else if (A->get_data_format() == SPARSEMATRIX_FORMAT_CUSPARSE_CSR){
+    else if (A->get_data_format() == SPARSEMATRIX_FORMAT_CUSPARSE_CSR) {
         assert(B->get_data_format() == SPARSEMATRIX_FORMAT_CUSPARSE_DENSE);
         assert(C->get_data_format() == SPARSEMATRIX_FORMAT_CUSPARSE_DENSE);
         assert(settings != nullptr);
-        spgematmul_cusparse<T>(alpha, trans_A, reinterpret_cast<spMatrix::cusparseSpMatrix_CSR<T>*>(A), trans_B, reinterpret_cast<spMatrix::cusparseSpMatrix_DENSE<T>*>(B), trans_B, beta, reinterpret_cast<spMatrix::cusparseSpMatrix_DENSE<T>*>(C), reinterpret_cast<spgemm_cusparse_settings*>(settings));
-    } else if (A->get_data_format() == SPARSEMATRIX_FORMAT_CUSPARSE_DENSE){
+        spgematmul_cusparse<T>(alpha, trans_A, reinterpret_cast<spMatrix::cusparseSpMatrix_CSR<T>*>(A), trans_B,
+                               reinterpret_cast<spMatrix::cusparseSpMatrix_DENSE<T>*>(B), trans_B, beta,
+                               reinterpret_cast<spMatrix::cusparseSpMatrix_DENSE<T>*>(C),
+                               reinterpret_cast<spgemm_cusparse_settings*>(settings));
+    } else if (A->get_data_format() == SPARSEMATRIX_FORMAT_CUSPARSE_DENSE) {
         std::fprintf(stderr, "Spgemm for cusparse_dense is not yet implemented.\n");
     }
-    #endif
+#endif
     else {
         std::fprintf(stderr, "No matching routine found for the input data format for spgematmul.\n");
     }
@@ -44,37 +47,39 @@ void spgematmul_cusparse(T alpha, bool trans_A, spMatrix::cusparseSpMatrix_CSR<T
 //  explicit instantiation for type int, float, double
 template <>
 void spgematmul_cusparse<int>(int alpha, bool trans_A, spMatrix::cusparseSpMatrix_CSR<int>* A, bool trans_B,
-                              spMatrix::cusparseSpMatrix_DENSE<int>* B, int beta, spMatrix::cusparseSpMatrix_DENSE<int>* C,
-                              spgemm_cusparse_settings settings) {
+                              spMatrix::cusparseSpMatrix_DENSE<int>* B, int beta,
+                              spMatrix::cusparseSpMatrix_DENSE<int>* C, spgemm_cusparse_settings settings) {
     cusparseErrchk(cusparseSpMM(::magmadnn::internal::MAGMADNN_SETTINGS->cusparse_handle,
                                 trans_A ? CUSPARSE_OPERATION_TRANSPOSE : CUSPARSE_OPERATION_NON_TRANSPOSE,
                                 trans_B ? CUSPARSE_OPERATION_TRANSPOSE : CUSPARSE_OPERATION_NON_TRANSPOSE, &alpha,
                                 *reinterpret_cast<cusparseSpMatDescr_t*>(A->get_descriptor()),
                                 *reinterpret_cast<cusparseDnMatDescr_t*>(B->get_descriptor()), &beta,
-                                *reinterpret_cast<cusparseDnMatDescr_t*>(C->get_descriptor()), CUDA_R_32I, settings.algo,
-                                settings.workspace));
+                                *reinterpret_cast<cusparseDnMatDescr_t*>(C->get_descriptor()), CUDA_R_32I,
+                                settings.algo, settings.workspace));
 }
 template <>
 void spgematmul_cusparse<float>(float alpha, bool trans_A, spMatrix::cusparseSpMatrix_CSR<float>* A, bool trans_B,
-                                spMatrix::cusparseSpMatrix_DENSE<float>* B, float beta, spMatrix::cusparseSpMatrix_DENSE<float>* C,
-                                spgemm_cusparse_settings settings) {
+                                spMatrix::cusparseSpMatrix_DENSE<float>* B, float beta,
+                                spMatrix::cusparseSpMatrix_DENSE<float>* C, spgemm_cusparse_settings settings) {
     cusparseErrchk(cusparseSpMM(::magmadnn::internal::MAGMADNN_SETTINGS->cusparse_handle,
                                 trans_A ? CUSPARSE_OPERATION_TRANSPOSE : CUSPARSE_OPERATION_NON_TRANSPOSE,
                                 trans_B ? CUSPARSE_OPERATION_TRANSPOSE : CUSPARSE_OPERATION_NON_TRANSPOSE, &alpha,
                                 *reinterpret_cast<cusparseSpMatDescr_t*>(A->get_descriptor()),
                                 *reinterpret_cast<cusparseDnMatDescr_t*>(B->get_descriptor()), &beta,
-                                *reinterpret_cast<cusparseDnMatDescr_t*>(C->get_descriptor()), CUDA_R_32F, settings.algo,
-                                settings.workspace));
+                                *reinterpret_cast<cusparseDnMatDescr_t*>(C->get_descriptor()), CUDA_R_32F,
+                                settings.algo, settings.workspace));
 }
 template <>
-void spgematmul_cusparse<double>(double alpha, bool trans_A, spMatrix::cusparseSpMatrix_CSR<double>* A, bool trans_B, spMatrix::cusparseSpMatrix_DENSE<double>* B, double beta, spMatrix::cusparseSpMatrix_DENSE<double>* C, spgemm_cusparse_settings settings) {
+void spgematmul_cusparse<double>(double alpha, bool trans_A, spMatrix::cusparseSpMatrix_CSR<double>* A, bool trans_B,
+                                 spMatrix::cusparseSpMatrix_DENSE<double>* B, double beta,
+                                 spMatrix::cusparseSpMatrix_DENSE<double>* C, spgemm_cusparse_settings settings) {
     cusparseErrchk(cusparseSpMM(::magmadnn::internal::MAGMADNN_SETTINGS->cusparse_handle,
                                 trans_A ? CUSPARSE_OPERATION_TRANSPOSE : CUSPARSE_OPERATION_NON_TRANSPOSE,
                                 trans_B ? CUSPARSE_OPERATION_TRANSPOSE : CUSPARSE_OPERATION_NON_TRANSPOSE, &alpha,
                                 *reinterpret_cast<cusparseSpMatDescr_t*>(A->get_descriptor()),
                                 *reinterpret_cast<cusparseDnMatDescr_t*>(B->get_descriptor()), &beta,
-                                *reinterpret_cast<cusparseDnMatDescr_t*>(C->get_descriptor()), CUDA_R_64F, settings.algo,
-                                settings.workspace));
+                                *reinterpret_cast<cusparseDnMatDescr_t*>(C->get_descriptor()), CUDA_R_64F,
+                                settings.algo, settings.workspace));
 }
 #endif
 

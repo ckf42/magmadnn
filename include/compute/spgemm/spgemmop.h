@@ -9,51 +9,56 @@
 namespace magmadnn {
 namespace op {
 
-//  takes two parameters: sparse a, Tensor b
+//  Operation to compute alpha*a*b where alpha is scalar, a is sparse matrix, b is an operation
 //  use a for reference (e.g. constant), only propagate b
 template <typename T>
 class SpgemmOp : public Operation<T> {
    public:
-    SpgemmOp(T alpha, spMatrix::sparseMatrix<T>* a, Operation<T>* b, T beta, Operation<T>* c, bool copy = true,bool needs_grad = true);
-    std::string to_string(void) { return "SPGEMM(" + a->to_string() + " * " + b->to_string() + ")"; }
+    SpgemmOp(T alpha, spMatrix::sparseMatrix<T>* a, Operation<T>* b, bool copy = true, bool needs_grad = true);
     ~SpgemmOp(void);
+    inline std::string to_string(void) {
+        return "SPGEMM( " + (alpha == (T) 1 ? "" : (std::to_string(alpha)) + " , ") + a->to_string() + " , " +
+               b->to_string() + " )";
+    }
 
    protected:
     bool copy;
     T alpha;
-    T beta;
+    const T beta = (T) 0;
     spMatrix::sparseMatrix<T>* a;
     Operation<T>* b;
-    Operation<T>* c;
     Tensor<T>* b_tensor;
-    Tensor<T>* c_tensor;
     //  struct wrapper used for calling spgemm routines
-    void* a_descriptor;  //  descriptor for a
-    void* b_wrapper;  //  wrapper for b
-    void* b_descriptor;  //  descriptor for b
-    void* c_wrapper;  //  wrapper for c
-    void* c_descriptor;  //  descriptor for c
+    //  todo: there may be a better way to do this? (e.g. massive use of templates)
+    spMatrix::spMatrix_DENSE<T>* b_wrapper;  //  wrapper for b
+    spMatrix::spMatrix_DENSE<T>* ab_wrapper;  //  wrapper for ab
+    spMatrix::spMatrix_DENSE<T>* grad_wrapper;  //  wrapper for grad
+    spMatrix::spMatrix_DENSE<T>* out_wrapper;  //  wrapper for out
+    //  store descriptor to save time in casting
+    void* a_descriptor;
+    void* b_descriptor;
+    void* ab_descriptor;
+    void* grad_descriptor;
+    void* out_desctiptor;
 
     spMatrix_format sp_mat_format;  //  format for a
     void* settings;  //  settings for calling spgemm routines
-
-#if defined(_HAS_CUDA_)
-
-#endif
+    void* grad_settings;  //  settings for computing grad
 
     Tensor<T>* _eval(bool recompute);
     Tensor<T>* _grad(Operation<T>* consumer, Operation<T>* var, Tensor<T>* grad);
 
    private:
-    void init_desc(void);
-    void init_host_desc(void);
+    void init(void);
+    void init_grad(Tensor<T>* grad, Tensor<T>* out);
 #if defined(_HAS_CUDA_)
-    void init_cusparse_desc(void);
+    void init_cusparse_csr(void);
+    void init_grad_cusparse_csr(Tensor<T>* grad, Tensor<T>* out);
 #endif
 };
 
-// template <typename T>
-// SpgemmOp<T> *spgemm(){}
+template <typename T>
+SpgemmOp<T>* spgemm(spMatrix::spMatrix_DENSE<T>* a, Operation<T>* b, bool copy = true, bool needs_grad = true);
 
 }  //  namespace op
 }  //  namespace magmadnn

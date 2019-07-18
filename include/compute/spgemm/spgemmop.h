@@ -30,10 +30,10 @@ class SpgemmOp : public Operation<T> {
     Tensor<T>* b_tensor;
     //  struct wrapper used for calling spgemm routines
     //  todo: there may be a better way to do this? (e.g. massive use of templates)
-    spMatrix::spMatrix_DENSE<T>* b_wrapper;  //  wrapper for b
-    spMatrix::spMatrix_DENSE<T>* ab_wrapper;  //  wrapper for ab
+    spMatrix::spMatrix_DENSE<T>* b_wrapper;     //  wrapper for b
+    spMatrix::spMatrix_DENSE<T>* ab_wrapper;    //  wrapper for ab
     spMatrix::spMatrix_DENSE<T>* grad_wrapper;  //  wrapper for grad
-    spMatrix::spMatrix_DENSE<T>* out_wrapper;  //  wrapper for out
+    spMatrix::spMatrix_DENSE<T>* out_wrapper;   //  wrapper for out
     //  store descriptor to save time in casting
     void* a_descriptor;
     void* b_descriptor;
@@ -42,8 +42,8 @@ class SpgemmOp : public Operation<T> {
     void* out_desctiptor;
 
     spMatrix_format sp_mat_format;  //  format for a
-    void* settings;  //  settings for calling spgemm routines
-    void* grad_settings;  //  settings for computing grad
+    void* settings;                 //  settings for calling spgemm routines
+    void* grad_settings;            //  settings for computing grad
 
     Tensor<T>* _eval(bool recompute);
     Tensor<T>* _grad(Operation<T>* consumer, Operation<T>* var, Tensor<T>* grad);

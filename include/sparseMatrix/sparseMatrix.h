@@ -34,7 +34,7 @@ class sparseMatrix {
 #if defined(DEBUG)
     sparseMatrix(void);
 #endif
-    sparseMatrix(const Tensor<T>* adjMatrixTensorPtr, memory_t mem_type, spMatrix_format format);
+    sparseMatrix(const Tensor<T>* spMatrixTensorPtr, memory_t mem_type, spMatrix_format format);
     /** returns the data format of the sparse matrix
      */
     inline spMatrix_format get_data_format(void) const { return _format; }
@@ -80,7 +80,7 @@ class spMatrix_DENSE : public sparseMatrix<T> {
     spMatrix_DENSE(void);
 #endif
     //  allocate a copy
-    spMatrix_DENSE(const Tensor<T>* adjMatrixTensorPtr, memory_t mem_type, spMatrix_format format, bool copy);
+    spMatrix_DENSE(const Tensor<T>* spMatrixTensorPtr, memory_t mem_type, spMatrix_format format, bool copy);
     virtual ~spMatrix_DENSE(void) = 0;
     //  writes the (uncompressed) matrix into output and multiplies it with alpha
     //  output must have the same shape with this object
@@ -117,7 +117,7 @@ class spMatrix_CSR : public sparseMatrix<T> {
 #if defined(DEBUG)
     spMatrix_CSR(void);
 #endif
-    spMatrix_CSR(const Tensor<T>* adjMatrixTensorPtr, memory_t mem_type, spMatrix_format format);
+    spMatrix_CSR(const Tensor<T>* spMatrixTensorPtr, memory_t mem_type, spMatrix_format format);
     virtual ~spMatrix_CSR(void) = 0;
     //  returns the number of nonzero elements
     inline unsigned get_nnz(void) { return _nnz; }
@@ -143,7 +143,7 @@ class hostSpMatrix_DENSE : public spMatrix_DENSE<T> {
     hostSpMatrix_DENSE<T>& operator=(const hostSpMatrix_DENSE<T>& that) = delete;
 
    public:
-    hostSpMatrix_DENSE(const Tensor<T>* adjMatrixTensorPtr, bool copy = false);
+    hostSpMatrix_DENSE(const Tensor<T>* spMatrixTensorPtr, bool copy = false);
     ~hostSpMatrix_DENSE(void);
 };
 
@@ -155,7 +155,7 @@ class hostSpMatrix_CSR : public spMatrix_CSR<T> {
     hostSpMatrix_CSR<T>& operator=(const hostSpMatrix_CSR<T>& that) = delete;
 
    public:
-    hostSpMatrix_CSR(const Tensor<T>* adjMatrixTensorPtr);
+    hostSpMatrix_CSR(const Tensor<T>* spMatrixTensorPtr);
     ~hostSpMatrix_CSR(void);
 };
 
@@ -163,10 +163,10 @@ class hostSpMatrix_CSR : public spMatrix_CSR<T> {
 
 //  concrete class for sparse matrix in cusparse dense format in GPU memory
 //  wrapper for cusparseDnMatDescr_t object
-//  since cusparse does not support row-major dense matrix while Tensor stores data in row-major order, internal _data are stored as column-major
-//  hense whenever a object is created from a Tensor or whenever get_uncompressed_data() is called, extra time will be used to convert order 
-//  todo: find a method to reduce the computation time spent on converting order 
-//  todo: wait for cusparse support on row-major order
+//  since cusparse does not support row-major dense matrix while Tensor stores data in row-major order, internal _data
+//  are stored as column-major hense whenever a object is created from a Tensor or whenever get_uncompressed_data() is
+//  called, extra time will be used to convert order todo: find a method to reduce the computation time spent on
+//  converting order todo: wait for cusparse support on row-major order
 template <typename T>
 class cusparseSpMatrix_DENSE : public spMatrix_DENSE<T> {
    private:
@@ -174,7 +174,7 @@ class cusparseSpMatrix_DENSE : public spMatrix_DENSE<T> {
     cusparseSpMatrix_DENSE<T>& operator=(const cusparseSpMatrix_DENSE<T>& that) = delete;
 
    public:
-    cusparseSpMatrix_DENSE(const Tensor<T>* adjMatrixTensorPtr, memory_t mem_type = MANAGED, bool copy = false);
+    cusparseSpMatrix_DENSE(const Tensor<T>* spMatrixTensorPtr, memory_t mem_type = MANAGED, bool copy = false);
     ~cusparseSpMatrix_DENSE(void);
     //  need to specialize due the the difference in order
     inline void get_uncompressed_mat(Tensor<T>* output, T alpha = (T) 1) const {
@@ -198,11 +198,16 @@ class cusparseSpMatrix_CSR : public spMatrix_CSR<T> {
     cusparseSpMatrix_CSR<T>& operator=(const cusparseSpMatrix_CSR<T>& that) = delete;
 
    public:
-    cusparseSpMatrix_CSR(const Tensor<T>* adjMatrixTensorPtr, memory_t mem_type = MANAGED);
+    cusparseSpMatrix_CSR(const Tensor<T>* spMatrixTensorPtr, memory_t mem_type = MANAGED);
     ~cusparseSpMatrix_CSR(void);
 };
 
 #endif
+
+//  give a new sparseMatrix pointer that stores spMatrixTensorPtr in given format
+//  may need to type cast to specific class for further use
+template <typename T>
+sparseMatrix<T>* getSpMat(const Tensor<T>* spMatrixTensorPtr, spMatrix_format format, memory_t mem_type);
 
 }  // namespace spMatrix
 }  //  namespace magmadnn

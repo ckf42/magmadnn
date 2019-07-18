@@ -76,39 +76,51 @@ void SpgemmOp<T>::init(void) {
 
 #if defined(_HAS_CUDA_)
 template <typename T>
-void SpgemmOp<T>::init_grad_cusparse_csr(Tensor<T>* grad, Tensor<T>* out){
+void SpgemmOp<T>::init_grad_cusparse_csr(Tensor<T>* grad, Tensor<T>* out) {
     std::fprintf(stderr, "Requested type for SpgemmOp is not supported.\n");
 }
 template <>
-void SpgemmOp<int>::init_grad_cusparse_csr(Tensor<int>* grad, Tensor<int>* out){
+void SpgemmOp<int>::init_grad_cusparse_csr(Tensor<int>* grad, Tensor<int>* out) {
     grad_wrapper = new spMatrix::cusparseSpMatrix_DENSE<int>(grad, this->mem_type, false);
     grad_descriptor = AS_TYPE(spMatrix::cusparseSpMatrix_DENSE<int>*, grad_wrapper)->get_descriptor();
     out_wrapper = new spMatrix::cusparseSpMatrix_DENSE<int>(out, this->mem_type, false);
     out_desctiptor = AS_TYPE(spMatrix::cusparseSpMatrix_DENSE<int>*, out_wrapper)->get_descriptor();
     grad_settings = new math::spgemm_cusparse_settings{CUSPARSE_CSRMM_ALG1, nullptr, 0};
-    cusparseErrchk(cusparseSpMM_bufferSize(::magmadnn::internal::MAGMADNN_SETTINGS->cusparse_handle, CUSPARSE_OPERATION_TRANSPOSE, CUSPARSE_OPERATION_NON_TRANSPOSE, &alpha, *AS_TYPE(cusparseSpMatDescr_t*, a_descriptor), *AS_TYPE(cusparseDnMatDescr_t*, grad_descriptor), &beta, *AS_TYPE(cusparseDnMatDescr_t*, out_desctiptor), CUDA_R_32I, CUSPARSE_CSRMM_ALG1, &AS_TYPE(math::spgemm_cusparse_settings*, grad_settings)->workspace_size));
+    cusparseErrchk(cusparseSpMM_bufferSize(
+        ::magmadnn::internal::MAGMADNN_SETTINGS->cusparse_handle, CUSPARSE_OPERATION_TRANSPOSE,
+        CUSPARSE_OPERATION_NON_TRANSPOSE, &alpha, *AS_TYPE(cusparseSpMatDescr_t*, a_descriptor),
+        *AS_TYPE(cusparseDnMatDescr_t*, grad_descriptor), &beta, *AS_TYPE(cusparseDnMatDescr_t*, out_desctiptor),
+        CUDA_R_32I, CUSPARSE_CSRMM_ALG1, &AS_TYPE(math::spgemm_cusparse_settings*, grad_settings)->workspace_size));
     cudaErrchk(cudaMalloc((void**) &AS_TYPE(math::spgemm_cusparse_settings*, grad_settings)->workspace,
                           AS_TYPE(math::spgemm_cusparse_settings*, grad_settings)->workspace_size));
 }
 template <>
-void SpgemmOp<float>::init_grad_cusparse_csr(Tensor<float>* grad, Tensor<float>* out){
+void SpgemmOp<float>::init_grad_cusparse_csr(Tensor<float>* grad, Tensor<float>* out) {
     grad_wrapper = new spMatrix::cusparseSpMatrix_DENSE<float>(grad, this->mem_type, false);
     grad_descriptor = AS_TYPE(spMatrix::cusparseSpMatrix_DENSE<float>*, grad_wrapper)->get_descriptor();
     out_wrapper = new spMatrix::cusparseSpMatrix_DENSE<float>(out, this->mem_type, false);
     out_desctiptor = AS_TYPE(spMatrix::cusparseSpMatrix_DENSE<float>*, out_wrapper)->get_descriptor();
     grad_settings = new math::spgemm_cusparse_settings{CUSPARSE_CSRMM_ALG1, nullptr, 0};
-    cusparseErrchk(cusparseSpMM_bufferSize(::magmadnn::internal::MAGMADNN_SETTINGS->cusparse_handle, CUSPARSE_OPERATION_TRANSPOSE, CUSPARSE_OPERATION_NON_TRANSPOSE, &alpha, *AS_TYPE(cusparseSpMatDescr_t*, a_descriptor), *AS_TYPE(cusparseDnMatDescr_t*, grad_descriptor), &beta, *AS_TYPE(cusparseDnMatDescr_t*, out_desctiptor), CUDA_R_32I, CUSPARSE_CSRMM_ALG1, &AS_TYPE(math::spgemm_cusparse_settings*, grad_settings)->workspace_size));
+    cusparseErrchk(cusparseSpMM_bufferSize(
+        ::magmadnn::internal::MAGMADNN_SETTINGS->cusparse_handle, CUSPARSE_OPERATION_TRANSPOSE,
+        CUSPARSE_OPERATION_NON_TRANSPOSE, &alpha, *AS_TYPE(cusparseSpMatDescr_t*, a_descriptor),
+        *AS_TYPE(cusparseDnMatDescr_t*, grad_descriptor), &beta, *AS_TYPE(cusparseDnMatDescr_t*, out_desctiptor),
+        CUDA_R_32I, CUSPARSE_CSRMM_ALG1, &AS_TYPE(math::spgemm_cusparse_settings*, grad_settings)->workspace_size));
     cudaErrchk(cudaMalloc((void**) &AS_TYPE(math::spgemm_cusparse_settings*, grad_settings)->workspace,
                           AS_TYPE(math::spgemm_cusparse_settings*, grad_settings)->workspace_size));
 }
 template <>
-void SpgemmOp<double>::init_grad_cusparse_csr(Tensor<double>* grad, Tensor<double>* out){
+void SpgemmOp<double>::init_grad_cusparse_csr(Tensor<double>* grad, Tensor<double>* out) {
     grad_wrapper = new spMatrix::cusparseSpMatrix_DENSE<double>(grad, this->mem_type, false);
     grad_descriptor = AS_TYPE(spMatrix::cusparseSpMatrix_DENSE<double>*, grad_wrapper)->get_descriptor();
     out_wrapper = new spMatrix::cusparseSpMatrix_DENSE<double>(out, this->mem_type, false);
     out_desctiptor = AS_TYPE(spMatrix::cusparseSpMatrix_DENSE<double>*, out_wrapper)->get_descriptor();
     grad_settings = new math::spgemm_cusparse_settings{CUSPARSE_CSRMM_ALG1, nullptr, 0};
-    cusparseErrchk(cusparseSpMM_bufferSize(::magmadnn::internal::MAGMADNN_SETTINGS->cusparse_handle, CUSPARSE_OPERATION_TRANSPOSE, CUSPARSE_OPERATION_NON_TRANSPOSE, &alpha, *AS_TYPE(cusparseSpMatDescr_t*, a_descriptor), *AS_TYPE(cusparseDnMatDescr_t*, grad_descriptor), &beta, *AS_TYPE(cusparseDnMatDescr_t*, out_desctiptor), CUDA_R_32I, CUSPARSE_CSRMM_ALG1, &AS_TYPE(math::spgemm_cusparse_settings*, grad_settings)->workspace_size));
+    cusparseErrchk(cusparseSpMM_bufferSize(
+        ::magmadnn::internal::MAGMADNN_SETTINGS->cusparse_handle, CUSPARSE_OPERATION_TRANSPOSE,
+        CUSPARSE_OPERATION_NON_TRANSPOSE, &alpha, *AS_TYPE(cusparseSpMatDescr_t*, a_descriptor),
+        *AS_TYPE(cusparseDnMatDescr_t*, grad_descriptor), &beta, *AS_TYPE(cusparseDnMatDescr_t*, out_desctiptor),
+        CUDA_R_32I, CUSPARSE_CSRMM_ALG1, &AS_TYPE(math::spgemm_cusparse_settings*, grad_settings)->workspace_size));
     cudaErrchk(cudaMalloc((void**) &AS_TYPE(math::spgemm_cusparse_settings*, grad_settings)->workspace,
                           AS_TYPE(math::spgemm_cusparse_settings*, grad_settings)->workspace_size));
 }
@@ -158,6 +170,7 @@ SpgemmOp<T>::SpgemmOp(T alpha, spMatrix::sparseMatrix<T>* a, Operation<T>* b, bo
     this->mem_type = b->get_memory_type();
     this->output_tensor = new Tensor<T>(this->output_shape, this->mem_type);
     init();
+	this->name = "SpgemmOp";
     //  todo: other?
 }
 
@@ -188,7 +201,7 @@ Tensor<T>* SpgemmOp<T>::_grad(Operation<T>* consumer, Operation<T>* var, Tensor<
     }
     grad_wrapper->set_mat(grad);
     math::spgematmul(alpha, true, a, false, grad_wrapper, beta, out_wrapper, grad_settings);
-    out_wrapper->get_uncompressed_mat(out, (T)1);
+    out_wrapper->get_uncompressed_mat(out, (T) 1);
     return out;
 }
 
@@ -206,35 +219,35 @@ SpgemmOp<T>::~SpgemmOp(void) {
     if (out_wrapper != nullptr) {
         delete out_wrapper;
     }
-    
     if (settings != nullptr) {
 #if defined(_HAS_CUDA_)
-        if (sp_mat_format == SPARSEMATRIX_FORMAT_CUSPARSE_CSR){
+        if (sp_mat_format == SPARSEMATRIX_FORMAT_CUSPARSE_CSR) {
             cudaErrchk(cudaFree(AS_TYPE(math::spgemm_cusparse_settings*, settings)->workspace));
         }
 #endif
         delete settings;
     }
-    if (grad_settings != nullptr){
+    if (grad_settings != nullptr) {
 #if defined(_HAS_CUDA_)
-        if (sp_mat_format == SPARSEMATRIX_FORMAT_CUSPARSE_CSR){
+        if (sp_mat_format == SPARSEMATRIX_FORMAT_CUSPARSE_CSR) {
             cudaErrchk(cudaFree(AS_TYPE(math::spgemm_cusparse_settings*, grad_settings)->workspace));
         }
 #endif
     }
 }
 
+template class SpgemmOp<int>;
+template class SpgemmOp<float>;
+template class SpgemmOp<double>;
+
 template <typename T>
-SpgemmOp<T>* spgemm(spMatrix::spMatrix_DENSE<T>* a, Operation<T>* b, bool copy, bool needs_grad){
+SpgemmOp<T>* spgemm(spMatrix::spMatrix_DENSE<T>* a, Operation<T>* b, bool copy, bool needs_grad) {
     return new SpgemmOp<T>(a, b, copy, needs_grad);
 }
 
-template <>
-SpgemmOp<int>* spgemm(spMatrix::spMatrix_DENSE<int>* a, Operation<int>* b, bool copy, bool needs_grad);
-template <>
-SpgemmOp<float>* spgemm(spMatrix::spMatrix_DENSE<float>* a, Operation<float>* b, bool copy, bool needs_grad);
-template <>
-SpgemmOp<double>* spgemm(spMatrix::spMatrix_DENSE<double>* a, Operation<double>* b, bool copy, bool needs_grad);
+template SpgemmOp<int>* spgemm(spMatrix::spMatrix_DENSE<int>*, Operation<int>*, bool, bool);
+template SpgemmOp<float>* spgemm(spMatrix::spMatrix_DENSE<float>*, Operation<float>*, bool, bool);
+template SpgemmOp<double>* spgemm(spMatrix::spMatrix_DENSE<double>*, Operation<double>*, bool, bool);
 
 }  // namespace op
 }  // namespace magmadnn

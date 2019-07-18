@@ -11,11 +11,11 @@ sparseMatrix<T>::sparseMatrix(void) : _descriptor(nullptr), _descriptor_is_set(f
 }
 #endif
 template <typename T>
-sparseMatrix<T>::sparseMatrix(const Tensor<T>* adjMatrixTensorPtr, memory_t mem_type, spMatrix_format format)
+sparseMatrix<T>::sparseMatrix(const Tensor<T>* spMatrixTensorPtr, memory_t mem_type, spMatrix_format format)
     : _format(format), _descriptor(nullptr), _descriptor_is_set(false), _mem_type(mem_type) {
-    assert(T_IS_MATRIX(adjMatrixTensorPtr));
-    _dim0 = adjMatrixTensorPtr->get_shape(0);
-    _dim1 = adjMatrixTensorPtr->get_shape(1);
+    assert(T_IS_MATRIX(spMatrixTensorPtr));
+    _dim0 = spMatrixTensorPtr->get_shape(0);
+    _dim1 = spMatrixTensorPtr->get_shape(1);
 }
 template <typename T>
 sparseMatrix<T>::~sparseMatrix(void) {
@@ -34,12 +34,12 @@ spMatrix_DENSE<T>::spMatrix_DENSE(void) : sparseMatrix(void), _data(nullptr) {
 }
 #endif
 template <typename T>
-spMatrix_DENSE<T>::spMatrix_DENSE(const Tensor<T>* adjMatrixTensorPtr, memory_t mem_type, spMatrix_format format,
+spMatrix_DENSE<T>::spMatrix_DENSE(const Tensor<T>* spMatrixTensorPtr, memory_t mem_type, spMatrix_format format,
                                   bool copy)
-    : sparseMatrix<T>(adjMatrixTensorPtr, mem_type, format) {
+    : sparseMatrix<T>(spMatrixTensorPtr, mem_type, format) {
     _data = new Tensor<T>({this->_dim0, this->_dim1}, {NONE, {}}, mem_type);
     if (copy) {
-        _data->copy_from(*adjMatrixTensorPtr);
+        _data->copy_from(*spMatrixTensorPtr);
     }
 }
 template <typename T>
@@ -56,8 +56,8 @@ spMatrix_CSR<T>::spMatrix_CSR(void)
 }
 #endif
 template <typename T>
-spMatrix_CSR<T>::spMatrix_CSR(const Tensor<T>* adjMatrixTensorPtr, memory_t mem_type, spMatrix_format format)
-    : sparseMatrix<T>(adjMatrixTensorPtr, mem_type, format) {
+spMatrix_CSR<T>::spMatrix_CSR(const Tensor<T>* spMatrixTensorPtr, memory_t mem_type, spMatrix_format format)
+    : sparseMatrix<T>(spMatrixTensorPtr, mem_type, format) {
     _nnz = 0;
     std::vector<T> nonzeroEleV;
     std::vector<int> rowAccV, colIdxV;
@@ -65,8 +65,8 @@ spMatrix_CSR<T>::spMatrix_CSR(const Tensor<T>* adjMatrixTensorPtr, memory_t mem_
     unsigned rowCounter = 0;
     for (unsigned j = 0; j < this->_dim1; j++) {
         for (unsigned i = 0; i < this->_dim0; i++) {
-            if (adjMatrixTensorPtr->get({i, j}) != T(0)) {
-                nonzeroEleV.push_back(adjMatrixTensorPtr->get({i, j}));
+            if (spMatrixTensorPtr->get({i, j}) != T(0)) {
+                nonzeroEleV.push_back(spMatrixTensorPtr->get({i, j}));
                 colIdxV.push_back(i);
                 ++rowCounter;
             }
@@ -91,7 +91,7 @@ void spMatrix_CSR<T>::get_uncompressed_mat(Tensor<T>* output, T alpha) const {
     assert(T_IS_MATRIX(output));
     assert(output->get_shape(0) == this->_dim0);
     assert(output->get_shape(1) == this->_dim1);
-    if (alpha == (T)0) {
+    if (alpha == (T) 0) {
         return;
     }
     unsigned nnzCount = 0;
@@ -117,8 +117,8 @@ spMatrix_CSR<T>::~spMatrix_CSR(void) {
 
 //  for concrete class hostSpMatrix_DENSE
 template <typename T>
-hostSpMatrix_DENSE<T>::hostSpMatrix_DENSE(const Tensor<T>* adjMatrixTensorPtr, bool copy)
-    : spMatrix_DENSE<T>(adjMatrixTensorPtr, HOST, SPARSEMATRIX_FORMAT_HOST_DENSE, copy) {
+hostSpMatrix_DENSE<T>::hostSpMatrix_DENSE(const Tensor<T>* spMatrixTensorPtr, bool copy)
+    : spMatrix_DENSE<T>(spMatrixTensorPtr, HOST, SPARSEMATRIX_FORMAT_HOST_DENSE, copy) {
     /* empty */
 }
 template <typename T>
@@ -132,8 +132,8 @@ template class hostSpMatrix_DENSE<double>;
 
 //  for concrete class hostSpMatrix_CSR
 template <typename T>
-hostSpMatrix_CSR<T>::hostSpMatrix_CSR(const Tensor<T>* adjMatrixTensorPtr)
-    : spMatrix_CSR<T>(adjMatrixTensorPtr, HOST, SPARSEMATRIX_FORMAT_HOST_CSR) {
+hostSpMatrix_CSR<T>::hostSpMatrix_CSR(const Tensor<T>* spMatrixTensorPtr)
+    : spMatrix_CSR<T>(spMatrixTensorPtr, HOST, SPARSEMATRIX_FORMAT_HOST_CSR) {
     /* empty */
 }
 template <typename T>
@@ -149,8 +149,8 @@ template class hostSpMatrix_CSR<double>;
 
 //  for concrete class cusparseSpMatrix_DENSE
 template <typename T>
-cusparseSpMatrix_DENSE<T>::cusparseSpMatrix_DENSE(const Tensor<T>* adjMatrixTensorPtr, memory_t mem_type, bool copy)
-    : spMatrix_DENSE<T>(adjMatrixTensorPtr, mem_type, SPARSEMATRIX_FORMAT_CUSPARSE_DENSE, copy) {
+cusparseSpMatrix_DENSE<T>::cusparseSpMatrix_DENSE(const Tensor<T>* spMatrixTensorPtr, memory_t mem_type, bool copy)
+    : spMatrix_DENSE<T>(spMatrixTensorPtr, mem_type, SPARSEMATRIX_FORMAT_CUSPARSE_DENSE, copy) {
     fprintf(stderr, "Requested template type for cusparseSpMatrix_DENSE is not supported\n");
 }
 template <typename T>
@@ -163,8 +163,8 @@ cusparseSpMatrix_DENSE<T>::~cusparseSpMatrix_DENSE(void) {
 }
 //  specialization
 template <>
-cusparseSpMatrix_DENSE<int>::cusparseSpMatrix_DENSE(const Tensor<int>* adjMatrixTensorPtr, memory_t mem_type, bool copy)
-    : spMatrix_DENSE<int>(adjMatrixTensorPtr, mem_type, SPARSEMATRIX_FORMAT_CUSPARSE_DENSE, copy) {
+cusparseSpMatrix_DENSE<int>::cusparseSpMatrix_DENSE(const Tensor<int>* spMatrixTensorPtr, memory_t mem_type, bool copy)
+    : spMatrix_DENSE<int>(spMatrixTensorPtr, mem_type, SPARSEMATRIX_FORMAT_CUSPARSE_DENSE, copy) {
     assert(mem_type != HOST);
     if (copy) {
         internal::transpose_full_device<int>(_data, _data);
@@ -175,9 +175,9 @@ cusparseSpMatrix_DENSE<int>::cusparseSpMatrix_DENSE(const Tensor<int>* adjMatrix
     _descriptor_is_set = true;
 }
 template <>
-cusparseSpMatrix_DENSE<float>::cusparseSpMatrix_DENSE(const Tensor<float>* adjMatrixTensorPtr, memory_t mem_type,
+cusparseSpMatrix_DENSE<float>::cusparseSpMatrix_DENSE(const Tensor<float>* spMatrixTensorPtr, memory_t mem_type,
                                                       bool copy)
-    : spMatrix_DENSE<float>(adjMatrixTensorPtr, mem_type, SPARSEMATRIX_FORMAT_CUSPARSE_DENSE, copy) {
+    : spMatrix_DENSE<float>(spMatrixTensorPtr, mem_type, SPARSEMATRIX_FORMAT_CUSPARSE_DENSE, copy) {
     assert(mem_type != HOST);
     if (copy) {
         internal::transpose_full_device<float>(_data, _data);
@@ -188,9 +188,9 @@ cusparseSpMatrix_DENSE<float>::cusparseSpMatrix_DENSE(const Tensor<float>* adjMa
     _descriptor_is_set = true;
 }
 template <>
-cusparseSpMatrix_DENSE<double>::cusparseSpMatrix_DENSE(const Tensor<double>* adjMatrixTensorPtr, memory_t mem_type,
+cusparseSpMatrix_DENSE<double>::cusparseSpMatrix_DENSE(const Tensor<double>* spMatrixTensorPtr, memory_t mem_type,
                                                        bool copy)
-    : spMatrix_DENSE<double>(adjMatrixTensorPtr, mem_type, SPARSEMATRIX_FORMAT_CUSPARSE_DENSE, copy) {
+    : spMatrix_DENSE<double>(spMatrixTensorPtr, mem_type, SPARSEMATRIX_FORMAT_CUSPARSE_DENSE, copy) {
     assert(mem_type != HOST);
     if (copy) {
         internal::transpose_full_device<double>(_data, _data);
@@ -207,8 +207,8 @@ template class cusparseSpMatrix_DENSE<double>;
 
 //  for concrete class cusparseSparseMat
 template <typename T>
-cusparseSpMatrix_CSR<T>::cusparseSpMatrix_CSR(const Tensor<T>* adjMatrixTensorPtr, memory_t mem_type)
-    : spMatrix_CSR<T>(adjMatrixTensorPtr, mem_type, SPARSEMATRIX_FORMAT_CUSPARSE_CSR) {
+cusparseSpMatrix_CSR<T>::cusparseSpMatrix_CSR(const Tensor<T>* spMatrixTensorPtr, memory_t mem_type)
+    : spMatrix_CSR<T>(spMatrixTensorPtr, mem_type, SPARSEMATRIX_FORMAT_CUSPARSE_CSR) {
     fprintf(stderr, "Requested template type for cusparseSpMatrix_CSR is not supported\n");
 }
 template <typename T>
@@ -221,8 +221,8 @@ cusparseSpMatrix_CSR<T>::~cusparseSpMatrix_CSR(void) {
 }
 //  specialization
 template <>
-cusparseSpMatrix_CSR<int>::cusparseSpMatrix_CSR(const Tensor<int>* adjMatrixTensorPtr, memory_t mem_type)
-    : spMatrix_CSR<int>(adjMatrixTensorPtr, mem_type, SPARSEMATRIX_FORMAT_CUSPARSE_CSR) {
+cusparseSpMatrix_CSR<int>::cusparseSpMatrix_CSR(const Tensor<int>* spMatrixTensorPtr, memory_t mem_type)
+    : spMatrix_CSR<int>(spMatrixTensorPtr, mem_type, SPARSEMATRIX_FORMAT_CUSPARSE_CSR) {
     assert(mem_type != HOST);
     _descriptor = new cusparseSpMatDescr_t;
     cusparseErrchk(cusparseCreateCsr(reinterpret_cast<cusparseSpMatDescr_t*>(_descriptor), _dim0, _dim1, _nnz,
@@ -231,8 +231,8 @@ cusparseSpMatrix_CSR<int>::cusparseSpMatrix_CSR(const Tensor<int>* adjMatrixTens
     _descriptor_is_set = true;
 }
 template <>
-cusparseSpMatrix_CSR<float>::cusparseSpMatrix_CSR(const Tensor<float>* adjMatrixTensorPtr, memory_t mem_type)
-    : spMatrix_CSR<float>(adjMatrixTensorPtr, mem_type, SPARSEMATRIX_FORMAT_CUSPARSE_CSR) {
+cusparseSpMatrix_CSR<float>::cusparseSpMatrix_CSR(const Tensor<float>* spMatrixTensorPtr, memory_t mem_type)
+    : spMatrix_CSR<float>(spMatrixTensorPtr, mem_type, SPARSEMATRIX_FORMAT_CUSPARSE_CSR) {
     assert(mem_type != HOST);
     _descriptor = new cusparseSpMatDescr_t;
     cusparseErrchk(cusparseCreateCsr(reinterpret_cast<cusparseSpMatDescr_t*>(_descriptor), _dim0, _dim1, _nnz,
@@ -241,8 +241,8 @@ cusparseSpMatrix_CSR<float>::cusparseSpMatrix_CSR(const Tensor<float>* adjMatrix
     _descriptor_is_set = true;
 }
 template <>
-cusparseSpMatrix_CSR<double>::cusparseSpMatrix_CSR(const Tensor<double>* adjMatrixTensorPtr, memory_t mem_type)
-    : spMatrix_CSR<double>(adjMatrixTensorPtr, mem_type, SPARSEMATRIX_FORMAT_CUSPARSE_CSR) {
+cusparseSpMatrix_CSR<double>::cusparseSpMatrix_CSR(const Tensor<double>* spMatrixTensorPtr, memory_t mem_type)
+    : spMatrix_CSR<double>(spMatrixTensorPtr, mem_type, SPARSEMATRIX_FORMAT_CUSPARSE_CSR) {
     assert(mem_type != HOST);
     _descriptor = new cusparseSpMatDescr_t;
     cusparseErrchk(cusparseCreateCsr(reinterpret_cast<cusparseSpMatDescr_t*>(_descriptor), _dim0, _dim1, _nnz,
@@ -254,7 +254,36 @@ cusparseSpMatrix_CSR<double>::cusparseSpMatrix_CSR(const Tensor<double>* adjMatr
 template class cusparseSpMatrix_CSR<int>;
 template class cusparseSpMatrix_CSR<float>;
 template class cusparseSpMatrix_CSR<double>;
-
 #endif
+
+template <typename T>
+sparseMatrix<T>* getSpMat(const Tensor<T>* spMatrixTensorPtr, spMatrix_format format, memory_t mem_type) {
+	sparseMatrix<T>* out = nullptr;
+	switch (format)
+	{
+	case SPARSEMATRIX_FORMAT_HOST_CSR:
+		assert(mem_type == HOST);
+		out = new hostSpMatrix_CSR<T> * (spMatrixTensorPtr);
+		break;
+	case SPARSEMATRIX_FORMAT_HOST_DENSE:
+		assert(mem_type == HOST);
+		out = new hostSpMatrix_DENSE<T> * (spMatrixTensorPtr);
+		break;
+#if defined(_HAS_CUDA_)
+	case SPARSEMATRIX_FORMAT_CUSPARSE_DENSE:
+		out = new cusparseSpMatrix_DENSE<T> * (spMatrixTensorPtr, mem_type);
+		break;
+	case SPARSEMATRIX_FORMAT_CUSPARSE_CSR:
+		out = new cusparseSpMatrix_CSR<T> * (spMatrixTensorPtr, mem_type);
+		break;
+#endif
+	default:
+		std::fprintf(stderr, "unable to create a sparse matrix with unknown format.\n");
+		break;
+	}
+	return out;
+}
+
+
 }  // namespace spMatrix
 }  // namespace magmadnn

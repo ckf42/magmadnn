@@ -23,10 +23,10 @@ void spgematmul(T alpha, bool trans_A, spMatrix::sparseMatrix<T>* A, bool trans_
         assert(B->get_data_format() == SPARSEMATRIX_FORMAT_CUSPARSE_DENSE);
         assert(C->get_data_format() == SPARSEMATRIX_FORMAT_CUSPARSE_DENSE);
         assert(settings != nullptr);
-        spgematmul_cusparse<T>(alpha, trans_A, reinterpret_cast<spMatrix::cusparseSpMatrix_CSR<T>*>(A), trans_B,
-                               reinterpret_cast<spMatrix::cusparseSpMatrix_DENSE<T>*>(B), trans_B, beta,
-                               reinterpret_cast<spMatrix::cusparseSpMatrix_DENSE<T>*>(C),
-                               reinterpret_cast<spgemm_cusparse_settings*>(settings));
+        spgematmul_cusparse<T>(alpha, trans_A, AS_TYPE(spMatrix::cusparseSpMatrix_CSR<T>*, A), trans_B,
+                               AS_TYPE(spMatrix::cusparseSpMatrix_DENSE<T>*, B), trans_B, beta,
+                               AS_TYPE(spMatrix::cusparseSpMatrix_DENSE<T>*, C),
+                               AS_TYPE(spgemm_cusparse_settings*, settings));
     } else if (A->get_data_format() == SPARSEMATRIX_FORMAT_CUSPARSE_DENSE) {
         std::fprintf(stderr, "Spgemm for cusparse_dense is not yet implemented.\n");
     }
@@ -52,9 +52,9 @@ void spgematmul_cusparse<int>(int alpha, bool trans_A, spMatrix::cusparseSpMatri
     cusparseErrchk(cusparseSpMM(::magmadnn::internal::MAGMADNN_SETTINGS->cusparse_handle,
                                 trans_A ? CUSPARSE_OPERATION_TRANSPOSE : CUSPARSE_OPERATION_NON_TRANSPOSE,
                                 trans_B ? CUSPARSE_OPERATION_TRANSPOSE : CUSPARSE_OPERATION_NON_TRANSPOSE, &alpha,
-                                *reinterpret_cast<cusparseSpMatDescr_t*>(A->get_descriptor()),
-                                *reinterpret_cast<cusparseDnMatDescr_t*>(B->get_descriptor()), &beta,
-                                *reinterpret_cast<cusparseDnMatDescr_t*>(C->get_descriptor()), CUDA_R_32I,
+                                *AS_TYPE(cusparseSpMatDescr_t*, A->get_descriptor()),
+                                *AS_TYPE(cusparseDnMatDescr_t*, B->get_descriptor()), &beta,
+                                *AS_TYPE(cusparseDnMatDescr_t*, C->get_descriptor()), CUDA_R_32I,
                                 settings.algo, settings.workspace));
 }
 template <>
@@ -64,9 +64,9 @@ void spgematmul_cusparse<float>(float alpha, bool trans_A, spMatrix::cusparseSpM
     cusparseErrchk(cusparseSpMM(::magmadnn::internal::MAGMADNN_SETTINGS->cusparse_handle,
                                 trans_A ? CUSPARSE_OPERATION_TRANSPOSE : CUSPARSE_OPERATION_NON_TRANSPOSE,
                                 trans_B ? CUSPARSE_OPERATION_TRANSPOSE : CUSPARSE_OPERATION_NON_TRANSPOSE, &alpha,
-                                *reinterpret_cast<cusparseSpMatDescr_t*>(A->get_descriptor()),
-                                *reinterpret_cast<cusparseDnMatDescr_t*>(B->get_descriptor()), &beta,
-                                *reinterpret_cast<cusparseDnMatDescr_t*>(C->get_descriptor()), CUDA_R_32F,
+                                *AS_TYPE(cusparseSpMatDescr_t*, A->get_descriptor()),
+                                *AS_TYPE(cusparseDnMatDescr_t*, B->get_descriptor()), &beta,
+                                *AS_TYPE(cusparseDnMatDescr_t*, C->get_descriptor()), CUDA_R_32F,
                                 settings.algo, settings.workspace));
 }
 template <>
@@ -76,9 +76,9 @@ void spgematmul_cusparse<double>(double alpha, bool trans_A, spMatrix::cusparseS
     cusparseErrchk(cusparseSpMM(::magmadnn::internal::MAGMADNN_SETTINGS->cusparse_handle,
                                 trans_A ? CUSPARSE_OPERATION_TRANSPOSE : CUSPARSE_OPERATION_NON_TRANSPOSE,
                                 trans_B ? CUSPARSE_OPERATION_TRANSPOSE : CUSPARSE_OPERATION_NON_TRANSPOSE, &alpha,
-                                *reinterpret_cast<cusparseSpMatDescr_t*>(A->get_descriptor()),
-                                *reinterpret_cast<cusparseDnMatDescr_t*>(B->get_descriptor()), &beta,
-                                *reinterpret_cast<cusparseDnMatDescr_t*>(C->get_descriptor()), CUDA_R_64F,
+                                *AS_TYPE(cusparseSpMatDescr_t*, A->get_descriptor()),
+                                *AS_TYPE(cusparseDnMatDescr_t*, B->get_descriptor()), &beta,
+                                *AS_TYPE(cusparseDnMatDescr_t*, C->get_descriptor()), CUDA_R_64F,
                                 settings.algo, settings.workspace));
 }
 #endif

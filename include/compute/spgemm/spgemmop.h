@@ -58,7 +58,7 @@ class SpgemmOp : public Operation<T> {
 };
 
 template <typename T>
-SpgemmOp<T>* spgemm(spMatrix::spMatrix_DENSE<T>* a, Operation<T>* b, bool copy = true, bool needs_grad = true);
+SpgemmOp<T>* spgemm(spMatrix::sparseMatrix<T>* a, Operation<T>* b, bool copy = true, bool needs_grad = true);
 
 }  //  namespace op
 }  //  namespace magmadnn

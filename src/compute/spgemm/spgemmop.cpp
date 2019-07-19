@@ -241,13 +241,13 @@ template class SpgemmOp<float>;
 template class SpgemmOp<double>;
 
 template <typename T>
-SpgemmOp<T>* spgemm(spMatrix::spMatrix_DENSE<T>* a, Operation<T>* b, bool copy, bool needs_grad) {
+SpgemmOp<T>* spgemm(spMatrix::sparseMatrix<T>* a, Operation<T>* b, bool copy, bool needs_grad) {
     return new SpgemmOp<T>(a, b, copy, needs_grad);
 }
 
-template SpgemmOp<int>* spgemm(spMatrix::spMatrix_DENSE<int>*, Operation<int>*, bool, bool);
-template SpgemmOp<float>* spgemm(spMatrix::spMatrix_DENSE<float>*, Operation<float>*, bool, bool);
-template SpgemmOp<double>* spgemm(spMatrix::spMatrix_DENSE<double>*, Operation<double>*, bool, bool);
+template SpgemmOp<int>* spgemm(spMatrix::sparseMatrix<int>*, Operation<int>*, bool, bool);
+template SpgemmOp<float>* spgemm(spMatrix::sparseMatrix<float>*, Operation<float>*, bool, bool);
+template SpgemmOp<double>* spgemm(spMatrix::sparseMatrix<double>*, Operation<double>*, bool, bool);
 
 }  // namespace op
 }  // namespace magmadnn

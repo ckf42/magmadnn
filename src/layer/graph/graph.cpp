@@ -142,7 +142,7 @@ spMatrix::sparseMatrix<T>* graph<T>::get_GCNConv_mat(spMatrix_format return_form
 	return spMatrix::get_spMat(V, V, valV, rowV, colV, return_format, return_mem_type);
 }
 
-//template class graph<int>;  //  may not be suitable
+template class graph<int>;  //  may not be suitable
 template class graph<float>;
 template class graph<double>;
 

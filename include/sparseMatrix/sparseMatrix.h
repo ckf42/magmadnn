@@ -39,17 +39,12 @@ class sparseMatrix {
     //  construct with given (dense) matrix
     sparseMatrix(const Tensor<T>* spMatrixTensorPtr, memory_t mem_type, spMatrix_format format);
     //  constructor only to define the dim
-    //  todo: replace all call to previous constructor to this one
     sparseMatrix(unsigned dim0, unsigned dim1, memory_t mem_type, spMatrix_format format);
-    /** returns the data format of the sparse matrix
-     */
+    // returns the data format of the sparse matrix
     inline spMatrix_format get_data_format(void) const { return _format; }
-    /** returns the shape of the sparse matrix
-     */
+    // returns the shape of the sparse matrix
     inline std::vector<unsigned> get_shape(void) { return std::vector<unsigned>{_dim0, _dim1}; }
-    /** returns the axis size at idx of shapedigonal
-     *  @param
-     */
+    // returns the axis size at idx of shapedigonal
     inline unsigned get_shape(unsigned idx) {
         assert(idx >= 0 && idx < 2);
         return (idx == 0 ? _dim0 : _dim1);
@@ -65,7 +60,7 @@ class sparseMatrix {
     //  output must have the same shape with this object
     virtual void get_uncompressed_mat(Tensor<T>* output, T alpha) const = 0;
     //  returns the string the matrix that describes the matrix shape
-    std::string to_string(void) const { return "spMat(" + std::to_string(_dim0) + " x " + std::to_string(_dim1) + ")"; }
+    inline std::string to_string(void) const { return "spMat(" + std::to_string(_dim0) + " x " + std::to_string(_dim1) + ")"; }
     //  returns the value at location (i, j)
     virtual T get(unsigned i, unsigned j) const = 0;
     //  returns a vector storing all the values at row rowIdx
@@ -78,7 +73,7 @@ class sparseMatrix {
 
 //  abstract base class for sparse matrix in dense format
 //  data are stored as a tensor
-//  basically wrapper for class Tensor<T>
+//  basically wrapper for class Tensor<T> (possibly with additional descriptor)
 template <typename T>
 class spMatrix_DENSE : public sparseMatrix<T> {
    private:
@@ -88,7 +83,6 @@ class spMatrix_DENSE : public sparseMatrix<T> {
    protected:
     Tensor<T>* _data;  //  a copy of the whole adjacency matix
     //  returns the pointer to the data Tensor
-    inline Tensor<T>* get_data_ptr(void) const { return _data; }
 
    public:
 #if defined(DEBUG)
@@ -98,8 +92,12 @@ class spMatrix_DENSE : public sparseMatrix<T> {
     spMatrix_DENSE(const Tensor<T>* spMatrixTensorPtr, memory_t mem_type, spMatrix_format format, bool copy);
     //  allocate a diagonal dense matrix
     spMatrix_DENSE(const std::vector<T>& diag, memory_t mem_type, spMatrix_format format);
+	//  allocate shape only
+	spMatrix_DENSE(unsigned dim0, unsigned dim1, memory_t mem_type, spMatrix_format format);
     virtual ~spMatrix_DENSE(void) = 0;
-    //  writes the (uncompressed) matrix into output and multiplies it with alpha
+	//  returns a pointer to the data ptr
+	inline Tensor<T>* get_data_ptr(void) const { return _data; }
+    //  writes the matrix into output and multiplies it with alpha
     //  output must have the same shape with this object
     inline void get_uncompressed_mat(Tensor<T>* output, T alpha) const {
         assert(T_IS_MATRIX(output));
@@ -118,13 +116,13 @@ class spMatrix_DENSE : public sparseMatrix<T> {
         _data->copy_from(*input);
     }
     //  returns the value at location (i, j)
-    inline T get(unsigned i, unsigned j) const { return _data->get({i, j}); }
+    inline virtual T get(unsigned i, unsigned j) const { return _data->get({i, j}); }
     //  returns a vector storing all the values at row rowIdx
-    std::vector<T> getRowSlice(unsigned rowIdx) const;
+    virtual std::vector<T> getRowSlice(unsigned rowIdx) const;
     //  changes the value at location (i, j) to val
-    inline void set(unsigned i, unsigned j, T val) { _data->set({i, j}, val); }
+    inline virtual void set(unsigned i, unsigned j, T val) { _data->set({i, j}, val); }
     //  returns the sum of elements in row rowIdx
-    T rowSum(unsigned rowIdx) const;
+    virtual T rowSum(unsigned rowIdx) const;
 };
 
 //  abstract base class for sparse matrix in CSR format
@@ -133,11 +131,13 @@ class spMatrix_CSR : public sparseMatrix<T> {
    private:
     spMatrix_CSR(const spMatrix_CSR& that) = delete;                   //  no copy for abstract class
     spMatrix_CSR<T>& operator=(const spMatrix_CSR<T>& that) = delete;  //  no assignment for abstract class
+
    protected:
     unsigned _nnz;           //  number of nonzero elements
     Tensor<T>* _valList;     //  nonzero elements in row order, size 1 * _nnz
     Tensor<int>* _rowCount;  //  number of nonzero elements appear in row[0:idx), zero-based, size 1 * (row + 1)
     Tensor<int>* _colIdx;    //  column indices of the nonzero elements in val, size 1 * _nnz
+
    public:
 #if defined(DEBUG)
     spMatrix_CSR(void);
@@ -154,10 +154,8 @@ class spMatrix_CSR : public sparseMatrix<T> {
     inline const Tensor<int>* get_row_ptr(void) const { return _rowCount; }
     //  returns a const pointer to colIdx
     inline const Tensor<int>* get_col_ptr(void) const { return _colIdx; }
-    //  returns the memory type used to store the data
-    inline memory_t get_memory_type(void) const { return this->_mem_type; }
     //  writes the (uncompressed) adjacency matrix into output
-    //  output must have the same shape with this object and assumed to be all zero
+    //  output must have the same shape with this object and is assumed to be all zero
     void get_uncompressed_mat(Tensor<T>* output, T alpha) const;
     //  return the value at location (i, j)
     T get(unsigned i, unsigned j) const;
@@ -183,6 +181,7 @@ class hostSpMatrix_DENSE : public spMatrix_DENSE<T> {
    public:
     hostSpMatrix_DENSE(const Tensor<T>* spMatrixTensorPtr, bool copy = false);
     hostSpMatrix_DENSE(const std::vector<T>& diag);
+	hostSpMatrix_DENSE(unsigned dim0, unsigned dim1);
     ~hostSpMatrix_DENSE(void);
 };
 
@@ -203,21 +202,25 @@ class hostSpMatrix_CSR : public spMatrix_CSR<T> {
 
 #if defined(_HAS_CUDA_)
 
-//  concrete class for sparse matrix in cusparse dense format in GPU memory
-//  wrapper for cusparseDnMatDescr_t object
-//  since cusparse does not support row-major dense matrix while Tensor stores data in row-major order, internal _data
-//  are stored as column-major hense whenever a object is created from a Tensor or whenever get_uncompressed_data() is
-//  called, extra time will be used to convert order todo: find a method to reduce the computation time spent on
-//  converting order todo: wait for cusparse support on row-major order
+//  Concrete class for sparse matrix in cusparse dense format in GPU memory
+//  Wrapper for cusparseDnMatDescr_t object. 
+//  Since cusparse does not support row-major dense matrix while Tensor stores data in row-major order, internal _data
+//  are stored as column-major. Hense whenever a object is created from a Tensor or whenever get_uncompressed_data() is
+//  called, extra time will be used to convert order 
+//  todo: find a method to reduce the computation time spent on
+//  converting order
+//  todo: wait for cusparse support on row-major order
 template <typename T>
 class cusparseSpMatrix_DENSE : public spMatrix_DENSE<T> {
    private:
     cusparseSpMatrix_DENSE(const cusparseSpMatrix_DENSE<T>& that) = delete;
     cusparseSpMatrix_DENSE<T>& operator=(const cusparseSpMatrix_DENSE<T>& that) = delete;
+	void createDesc(cudaDataType_t cuda_data_type);
 
    public:
     cusparseSpMatrix_DENSE(const Tensor<T>* spMatrixTensorPtr, memory_t mem_type = MANAGED, bool copy = false);
     cusparseSpMatrix_DENSE(const std::vector<T>& diag, memory_t mem_type = MANAGED);
+	cusparseSpMatrix_DENSE(unsigned dim0, unsigned dim1, memory_t mem_type = MANAGED);
     ~cusparseSpMatrix_DENSE(void);
     //  need to specialize due the the difference in order
     inline void get_uncompressed_mat(Tensor<T>* output, T alpha = (T) 1) const {
@@ -254,9 +257,12 @@ class cusparseSpMatrix_CSR : public spMatrix_CSR<T> {
 #endif
 
 //  returns a new sparseMatrix pointer that stores spMatrixTensorPtr in given format
-//  may need to type cast to specific class for further use
 template <typename T>
 sparseMatrix<T>* get_spMat(const Tensor<T>* spMatrixTensorPtr, spMatrix_format format, memory_t mem_type = HOST);
+//  returns a new sparseMatrix pointer with CSR format data valList, rowAccum, colIdx in given format
+template <typename T>
+sparseMatrix<T>* get_spMat(unsigned dim0, unsigned dim1, const std::vector<T>& valList, const std::vector<int>& rowAccum,
+	const std::vector<int>& colIdx, spMatrix_format format, memory_t mem_type = HOST);
 
 }  // namespace spMatrix
 }  //  namespace magmadnn

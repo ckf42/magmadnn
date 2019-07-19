@@ -76,10 +76,73 @@ spMatrix::sparseMatrix<T>* graph<T>::get_GCNConv_mat(spMatrix_format return_form
     for (unsigned idx = 0; idx < V; ++idx) {
         Dtilde[idx] = 1 + this->adjMatrix->rowSum(idx);
     }
-
+	std::vector<T> valV(E * 2 + V);
+	std::vector<int> rowV(V + 1);
+	std::vector<int> colV(E * 2 + V);
+	rowV[0] = 0;
+	//  todo: use (dynamic_cast<spMatrix::spMatrix_DENSE<T>*>(adjMatrix) != nullptr) ?
+	spMatrix_format format = adjMatrix->get_data_format();
+	if (format == SPARSEMATRIX_FORMAT_CUSPARSE_DENSE || format == SPARSEMATRIX_FORMAT_HOST_DENSE) {  //  is of denes format, has to go through whole matrix
+		spMatrix::spMatrix_DENSE<T>* castedAdj = AS_TYPE(spMatrix::spMatrix_DENSE<T>*, adjMatrix);
+		T A = (T)0, newA = (T)0;
+		unsigned idx = 0, counter = 0;
+		for (unsigned i = 0; i < V; ++i) {
+			counter = 0;
+			for (unsigned j = 0; j < V; ++j) {
+				A = castedAdj->get(i, j);
+				if (i == j) {
+					newA = (A == 0 ? 1 : A) / Dtilde[i];
+				}
+				else {
+					newA = (A == 0 ? (T)0 : (A + 1) / std::sqrt(Dtilde[i] * Dtilde[j]));
+				}
+				if (newA != 0) {
+					valV[idx] = newA;
+					colV[idx] = j;
+					counter++;
+					idx++;
+				}
+			}
+			row[i + 1] = row[i] + counter;
+		}
+	}
+	else /* if (dynamic_cast<spMatrix::spMatrix_CSR<T>*>(adjMatrix) != nullptr) */ {  //  is of CSR format
+		spMatrix::spMatrix_CSR<T>* castedAdj = AS_TYPE(spMatrix::spMatrix_CSR<T>*, adjMatrix);
+		T A = (T)0, newA = (T)0;
+		unsigned writePtr = 0;
+		int begin = 0, end = 0;
+		for (unsigned i = 0; i < V; ++i) {
+			begin = end;
+			end = castedAdj->get_row_ptr()->get(i + 1);
+			bool has_add_loop = false;
+			unsigned thisCol;
+			while (begin != end) {
+				thisCol = castedAdj->get_col_ptr()->get(begin);
+				assert(thisCol != i && "Self loop detected in the graph.\n");
+				if (i < thisCol && !has_add_loop) {
+					valV[writePtr] = (T)1 / Dtilde[i];
+					colV[writePtr] = i;
+					writePtr++;
+					has_add_loop = true;
+				}
+				A = castedAdj->get_val_ptr()->get(begin);
+				valV[writePtr] = (A + 1) / std::sqrt(Dtilde[i] * Dtilde[j]);
+				colV[writePtr] = thisCol;
+				++writePtr;
+				begin++;
+			}
+			if (!has_add_loop) {
+				valV[writePtr] = (T)1 / Dtilde[i];
+				colV[writePtr] = i;
+				writePtr++;
+			}
+			rowV[i + 1] = writePtr;;
+		}
+	}
+	return spMatrix::get_spMat(V, V, valV, rowV, colV, return_format, return_mem_type);
 }
 
-template class graph<int>;
+//template class graph<int>;  //  may not be suitable
 template class graph<float>;
 template class graph<double>;
 

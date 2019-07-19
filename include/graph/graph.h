@@ -2,6 +2,7 @@
 
 #include <cassert>
 #include <vector>
+#include <cmath>
 #include "sparseMatrix/sparseMatrix.h"
 #include "tensor/tensor.h"
 #include "utilities_internal.h"
@@ -40,7 +41,7 @@ class graph {
     //  K_{ij} = \tilde{D}_{ii}^{-1/2} * \tilde{D}_{jj}^{-1/2} * ( A_{ij} + \delta_{ij} )
     //  workaround before appropriate math routines of sparse matrix addition/modification are implemented
     //  todo: rewrite with proper math routines
-    spMatrix::sparseMatrix<T>* get_GCNConv_mat(spMatrix_format return_format, memory_t return_mem_type) const;
+    spMatrix::sparseMatrix<T>* get_GCNConv_mat(spMatrix_format return_format, memory_t return_mem_type = HOST) const;
 };
 
 }  // namespace magmadnn

@@ -30,7 +30,7 @@ sparseMatrix<T>::~sparseMatrix(void) {
     } */
 }
 template <typename T>
-T sparseMatrix<T>::rowSum(unsigned rowIdx) const {
+T sparseMatrix<T>::rowSum(unsigned rowIdx) const {  //  default one
     assert(rowIdx < this->_dim0);
     T out = (T) 0;
     for (auto& w : this->getRowSlice(rowIdx)) {
@@ -60,14 +60,15 @@ spMatrix_DENSE<T>::spMatrix_DENSE(const std::vector<T>& diag, memory_t mem_type,
     assert(this->_dim0 != 0);
     assery(this->_dim1 != 0);
     _data = new Tensor<T>({this->_dim0, this->_dim1}, {ZERO, {}}, mem_type);
-    bool has_nonzero_ele = false;
     for (unsigned idx = 0; idx < this->_dim0; ++idx) {
         if (diag[idx] != (T)0){
-            has_nonzero_ele = true;
             _data->set({idx, idx}, diag[idx]);
         }
     }
-    assert(has_nonzero_ele);
+}
+template <typename T>
+spMatrix_DENSE<T>::spMatrix_DENSE(unsigned dim0, unsigned dim1, memory_t mem_type, spMatrix_format format):sparseMatrix<T>(dim0, dim1, mem_type, format) {
+	_data = new Tensor<T>({ this->_dim0, this->_dim1 }, { ZERO, {} }, mem_type);
 }
 template <typename T>
 spMatrix_DENSE<T>::~spMatrix_DENSE(void) {
@@ -122,7 +123,7 @@ spMatrix_CSR<T>::spMatrix_CSR(const Tensor<T>* spMatrixTensorPtr, memory_t mem_t
     _valList = new Tensor<T>({unsigned(1), this->_nnz}, {NONE, {}}, mem_type);
     _rowCount = new Tensor<int>({unsigned(1), this->_dim0 + 1}, {NONE, {}}, mem_type);
     _colIdx = new Tensor<int>({unsigned(1), this->_nnz}, {NONE, {}}, mem_type);
-    //  todo: better method?
+    //  todo: batch assign?
     for (unsigned idx = 0; idx < this->_nnz; ++idx) {
         _valList->set(idx, nonzeroEleV[idx]);
         _colIdx->set(idx, colIdxV[idx]);
@@ -145,7 +146,6 @@ spMatrix_CSR<T>::spMatrix_CSR(const std::vector<T>& diag, memory_t mem_type, spM
         }
         rowV.push_back(_nnz);
     }
-    assert(_nnz != 0);
     _valList = new Tensor<T>({(unsigned) 1, _nnz}, {NONE, {}}, mem_type);
     _rowCount = new Tensor<int>({(unsigned) 1, this->_dim0 + 1}, {NONE, {}}, mem_type);
     _colIdx = new Tensor<int>({(unsigned) 1, _nnz}, {NONE, {}}, mem_type);
@@ -211,15 +211,15 @@ T spMatrix_CSR<T>::get(unsigned i, unsigned j) const {
     if (lastRowAcc == thisRowAcc) {  //  row i is all zero
         return (T) 0;
     }
-    //  nonzero idx of row i in in _colIdx[lastRowAcc:thisRowAxx)
+    //  nonzero idx of row i in in _colIdx[lastRowAcc:thisRowAcc)
     //  use lastRowAcc as an idx
-    //  todo: need to use binary search?
-    while (lastRowAcc != thisRowAcc){
-        if (_colIdx->get(lastRowAcc) == j){  //  hit
-            return _valList->get(lastRowAcc);
-        }
+    //  todo: change to use binary search?
+    while (lastRowAcc != thisRowAcc && _colIdx->get(lastRowAcc) < j){
         ++lastRowAcc;
     }
+	if (lastRowAcc != thisRowAcc && _colIdx->get(lastRowAcc) == j) {
+		return _valList->get(lastRowAcc);
+	}
     return (T) 0;
 }
 template <typename T>
@@ -257,7 +257,7 @@ void spMatrix_CSR<T>::set(unsigned i, unsigned j, T val){
     }
     //  don't know how to easily change _valList, _colIdx, _descriptor yet
     //  todo: implement this
-    assert(currVal != 0 && val != 0);
+	assert(currVal != (T)0 && val != (T)0);
     _valList->set(idx, val);
 }
 template <typename T>
@@ -279,6 +279,10 @@ hostSpMatrix_DENSE<T>::hostSpMatrix_DENSE(const Tensor<T>* spMatrixTensorPtr, bo
 template <typename T>
 hostSpMatrix_DENSE<T>::hostSpMatrix_DENSE(const std::vector<T>& diag): spMatrix_DENSE<T>(diag, HOST, SPARSEMATRIX_FORMAT_HOST_DENSE){
     /* empty */
+}
+template <typename T>
+hostSpMatrix_DENSE<T>::hostSpMatrix_DENSE(unsigned dim0, unsigned dim1): spMatrix_DENSE<T>(dim0, dim1, HOST, SPARSEMATRIX_FORMAT_HOST_DENSE){
+	/* empty */
 }
 template <typename T>
 hostSpMatrix_DENSE<T>::~hostSpMatrix_DENSE(void) {
@@ -329,6 +333,10 @@ cusparseSpMatrix_DENSE<T>::cusparseSpMatrix_DENSE(const std::vector<T>& diag, me
     fprintf(stderr, "Requested template type for cusparseSpMatrix_DENSE is not supported\n");
 }
 template <typename T>
+cusparseSpMatrix_DENSE<T>::cusparseSpMatrix_DENSE(unsigned dim0, unsigned dim1, memory_t mem_type) : spMatrix_DENSE<T>(dim0, dim1, mem_type, SPARSEMATRIX_FORMAT_HOST_DENSE) {
+	std::fprintf(stderr, "Requested template type for cusparseSpMatrix_DENSE is not supported\n");
+}
+template <typename T>
 cusparseSpMatrix_DENSE<T>::~cusparseSpMatrix_DENSE(void) {
     if (this->_descriptor_is_set) {
         cusparseDestroyDnMat(*AS_TYPE(cusparseDnMatDescr_t*, this->_descriptor));
@@ -336,18 +344,22 @@ cusparseSpMatrix_DENSE<T>::~cusparseSpMatrix_DENSE(void) {
         //  todo: check if desctiptor is also freed (e.g. assigned nullptr)
     }
 }
+template <typename T>
+void cusparseSpMatrix_DENSE<T>::createDesc(cudaDataType_t cuda_data_type) {
+	_descriptor = new cusparseDnMatDescr_t;
+	cusparseErrchk(cusparseCreateDnMat(AS_TYPE(cusparseDnMatDescr_t*, _descriptor), _dim0, _dim1, _dim0,
+		_data->get_ptr(), cuda_data_type, CUSPARSE_ORDER_COL));
+	_descriptor_is_set = true;
+}
 //  specialization
 template <>
 cusparseSpMatrix_DENSE<int>::cusparseSpMatrix_DENSE(const Tensor<int>* spMatrixTensorPtr, memory_t mem_type, bool copy)
     : spMatrix_DENSE<int>(spMatrixTensorPtr, mem_type, SPARSEMATRIX_FORMAT_CUSPARSE_DENSE, copy) {
     assert(mem_type != HOST);
-    if (copy) {
-        internal::transpose_full_device<int>(_data, _data);
-    }
-    _descriptor = new cusparseDnMatDescr_t;
-    cusparseErrchk(cusparseCreateDnMat(AS_TYPE(cusparseDnMatDescr_t*, _descriptor), _dim0, _dim1, _dim0,
-                                       _data->get_ptr(), CUDA_R_32I, CUSPARSE_ORDER_COL));
-    _descriptor_is_set = true;
+	if (copy) {
+		internal::transpose_full_device<int>(_data, _data);
+	}
+	this->createDesc(CUDA_R_32I);
 }
 template <>
 cusparseSpMatrix_DENSE<float>::cusparseSpMatrix_DENSE(const Tensor<float>* spMatrixTensorPtr, memory_t mem_type,
@@ -357,10 +369,7 @@ cusparseSpMatrix_DENSE<float>::cusparseSpMatrix_DENSE(const Tensor<float>* spMat
     if (copy) {
         internal::transpose_full_device<float>(_data, _data);
     }
-    _descriptor = new cusparseDnMatDescr_t;
-    cusparseErrchk(cusparseCreateDnMat(AS_TYPE(cusparseDnMatDescr_t*, _descriptor), _dim0, _dim1, _dim0,
-                                       _data->get_ptr(), CUDA_R_32F, CUSPARSE_ORDER_COL));
-    _descriptor_is_set = true;
+	this->createDesc(CUDA_R_32F);
 }
 template <>
 cusparseSpMatrix_DENSE<double>::cusparseSpMatrix_DENSE(const Tensor<double>* spMatrixTensorPtr, memory_t mem_type,
@@ -370,31 +379,37 @@ cusparseSpMatrix_DENSE<double>::cusparseSpMatrix_DENSE(const Tensor<double>* spM
     if (copy) {
         internal::transpose_full_device<double>(_data, _data);
     }
-    _descriptor = new cusparseDnMatDescr_t;
-    cusparseErrchk(cusparseCreateDnMat(AS_TYPE(cusparseDnMatDescr_t*, _descriptor), _dim0, _dim1, _dim0,
-                                       _data->get_ptr(), CUDA_R_64F, CUSPARSE_ORDER_COL));
-    _descriptor_is_set = true;
+	this->createDesc(CUDA_R_64F);
 }
 template <>
 cusparseSpMatrix_DENSE<int>::cusparseSpMatrix_DENSE(const std::vector<int>& diag, memory_t mem_type): spMatrix_DENSE<int>(diag, mem_type, SPARSEMATRIX_FORMAT_CUSPARSE_DENSE){
     assert(mem_type != HOST);
-    _descriptor = new cusparseDnMatDescr_t;
-    cusparseErrchk(cusparseCreateDnMat(AS_TYPE(cusparseDnMatDescr_t*, _descriptor), this->_dim0, this->_dim1, this->_dim0, _data->get_ptr(), CUDA_R_32I, CUSPARSE_ORDER_COL));
-    _descriptor_is_set = true;
+	this->createDesc(CUDA_R_32I);
 }
 template <>
 cusparseSpMatrix_DENSE<float>::cusparseSpMatrix_DENSE(const std::vector<float>& diag, memory_t mem_type): spMatrix_DENSE<float>(diag, mem_type, SPARSEMATRIX_FORMAT_CUSPARSE_DENSE){
     assert(mem_type != HOST);
-    _descriptor = new cusparseDnMatDescr_t;
-    cusparseErrchk(cusparseCreateDnMat(AS_TYPE(cusparseDnMatDescr_t*, _descriptor), this->_dim0, this->_dim1, this->_dim0, _data->get_ptr(), CUDA_R_32F, CUSPARSE_ORDER_COL));
-    _descriptor_is_set = true;
+	this->createDesc(CUDA_R_32F);
 }
 template <>
 cusparseSpMatrix_DENSE<double>::cusparseSpMatrix_DENSE(const std::vector<double>& diag, memory_t mem_type): spMatrix_DENSE<double>(diag, mem_type, SPARSEMATRIX_FORMAT_CUSPARSE_DENSE){
     assert(mem_type != HOST);
-    _descriptor = new cusparseDnMatDescr_t;
-    cusparseErrchk(cusparseCreateDnMat(AS_TYPE(cusparseDnMatDescr_t*, _descriptor), this->_dim0, this->_dim1, this->_dim0, _data->get_ptr(), CUDA_R_64F, CUSPARSE_ORDER_COL));
-    _descriptor_is_set = true;
+	this->createDesc(CUDA_R_64F);
+}
+template <>
+cusparseSpMatrix_DENSE<int>::cusparseSpMatrix_DENSE(unsigned dim0, unsigned dim1, memory_t mem_type) : spMatrix_DENSE<int>(dim0, dim1, mem_type, SPARSEMATRIX_FORMAT_CUSPARSE_DENSE) {
+	assert(mem_type != HOST);
+	this->createDesc(CUDA_R_32I);
+}
+template <>
+cusparseSpMatrix_DENSE<float>::cusparseSpMatrix_DENSE(unsigned dim0, unsigned dim1, memory_t mem_type) : spMatrix_DENSE<float>(dim0, dim1, mem_type, SPARSEMATRIX_FORMAT_CUSPARSE_DENSE) {
+	assert(mem_type != HOST);
+	this->createDesc(CUDA_R_32F);
+}
+template <>
+cusparseSpMatrix_DENSE<double>::cusparseSpMatrix_DENSE(unsigned dim0, unsigned dim1, memory_t mem_type) : spMatrix_DENSE<double>(dim0, dim1, mem_type, SPARSEMATRIX_FORMAT_CUSPARSE_DENSE) {
+	assert(mem_type != HOST);
+	this->createDesc(CUDA_R_64F);
 }
 //  explicit instantiation for type int, float, double
 template class cusparseSpMatrix_DENSE<int>;
@@ -527,6 +542,39 @@ template sparseMatrix<int>* get_spMat(const Tensor<int>* spMatrixTensorPtr, spMa
 template sparseMatrix<float>* get_spMat(const Tensor<float>* spMatrixTensorPtr, spMatrix_format format, memory_t mem_type);
 template sparseMatrix<double>* get_spMat(const Tensor<double>* spMatrixTensorPtr, spMatrix_format format, memory_t mem_type);
 
+template <typename T>
+sparseMatrix<T>* get_spMat(unsigned dim0, unsigned dim1, const std::vector<T>& valList, const std::vector<int>& rowAccum,
+	const std::vector<int>& colIdx, spMatrix_format format, memory_t mem_type = HOST) {
+	assert(valList.size() == colIdx.size());
+	assert(dim1 + 1 == rowAccum.size());
+	sparseMatrix<T>* out = nullptr;
+	switch (format)
+	{
+	case SPARSEMATRIX_FORMAT_HOST_CSR:
+		out = new hostSpMatrix_CSR<T>(dim0, dim1, valList, rowAccum, colIdx);
+		break;
+	case SPARSEMATRIX_FORMAT_HOST_DENSE:
+		out = new hostSpMatrix_DENSE<T>(dim0, dim1, valList, rowAccum, colIdx);
+		break;
+#if defined(_HAS_CUDA_)
+	case SPARSEMATRIX_FORMAT_CUSPARSE_DENSE:
+		out = new cusparseSpMatrix_CSR<T>(dim0, dim1, valList, rowAccum, colIdx, mem_type);
+		break;
+	case SPARSEMATRIX_FORMAT_CUSPARSE_CSR:
+		out = new cusparseSpMatrix_DENSE<T>(dim0, dim1, valList, rowAccum, colIdx, mem_type);
+		break;
+#endif
+	default:
+		std::fprintf(stderr, "unable to create a sparse matrix with unknown format.\n");
+		break;
+	}
+}
+template sparseMatrix<int>* get_spMat(unsigned dim0, unsigned dim1, const std::vector<int>& valList, const std::vector<int>& rowAccum,
+	const std::vector<int>& colIdx, spMatrix_format format, memory_t mem_type);
+template sparseMatrix<float>* get_spMat(unsigned dim0, unsigned dim1, const std::vector<float>& valList, const std::vector<int>& rowAccum,
+	const std::vector<int>& colIdx, spMatrix_format format, memory_t mem_type);
+template sparseMatrix<double>* get_spMat(unsigned dim0, unsigned dim1, const std::vector<double>& valList, const std::vector<int>& rowAccum,
+	const std::vector<int>& colIdx, spMatrix_format format, memory_t mem_type);
 
 }  // namespace spMatrix
 }  // namespace magmadnn

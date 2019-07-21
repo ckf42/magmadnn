@@ -71,7 +71,7 @@ graph<T>::~graph(void) {
 }
 
 template <typename T>
-spMatrix::sparseMatrix<T>* graph<T>::get_GCNConv_mat(spMatrix_format return_format, memory_t return_mem_type) const {
+spMatrix::sparseMatrix<T>* graph<T>::get_KW_transit_mat(spMatrix_format return_format, memory_t return_mem_type) const {
     std::vector<T> Dtilde(V, (T) 0);
     for (unsigned idx = 0; idx < V; ++idx) {
         Dtilde[idx] = 1 + this->adjMatrix->rowSum(idx);

@@ -30,7 +30,7 @@ sparseMatrix<T>::~sparseMatrix(void) {
     } */
 }
 template <typename T>
-T sparseMatrix<T>::rowSum(unsigned rowIdx) const {  //  default one
+T sparseMatrix<T>::rowSum(unsigned rowIdx) const {  //  default rowSum, if no override
     assert(rowIdx < this->_dim0);
     T out = (T) 0;
     for (auto& w : this->getRowSlice(rowIdx)) {

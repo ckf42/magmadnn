@@ -2,6 +2,8 @@
 namespace magmadnn {
 namespace math {
 
+//  todo: clean up
+
 template <typename T>
 void spgematmul(T alpha, bool trans_A, spMatrix::sparseMatrix<T>* A, bool trans_B, spMatrix::spMatrix_DENSE<T>* B,
                 T beta, spMatrix::spMatrix_DENSE<T>* C, void* settings) {

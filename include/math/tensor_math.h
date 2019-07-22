@@ -23,3 +23,4 @@
 #include "math/sum.h"
 #include "math/tile.h"
 #include "reduce_sum.h"
+#include "math/spgematmul.h"

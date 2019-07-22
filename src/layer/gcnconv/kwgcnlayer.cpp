@@ -11,7 +11,7 @@ KWGCNLayer<T>::KWGCNLayer(op::Operation<T>* input, graph<T>* struct_graph, unsig
       output_channel(output_channel),
       copy(copy),
       needs_grad(needs_grad) {
-    assert(this->get_input_shape().size == 3);
+    assert(this->get_input_shape().size() == 3);
     assert(this->struct_graph->get_order() == this->get_input_shape(1));
     this->name = "KipfGCN";
     T bound = static_cast<T>(sqrt(2.0 / this->input->get_output_shape(1)));
@@ -20,11 +20,11 @@ KWGCNLayer<T>::KWGCNLayer(op::Operation<T>* input, graph<T>* struct_graph, unsig
     this->weights = op::var("__" + this->name + "_layer_weights", this->weights_tensor);
     this->transition_matrix =
         this->struct_graph->get_KW_transit_mat(this->struct_graph->get_adj_format(), this->struct_graph->get_data_type());
-    this->outout = op::gcnconv(this->transition_matrix, this->input, this->weights);
+    this->output = op::gcnconv(this->transition_matrix, this->input, this->weights);
 }
 template <typename T>
 KWGCNLayer<T>::~KWGCNLayer(void) {
-    delete weight_tensor;
+    delete weights_tensor;
 }
 template <typename T>
 std::vector<op::Operation<T>*> KWGCNLayer<T>::get_weights(void) {
@@ -32,16 +32,15 @@ std::vector<op::Operation<T>*> KWGCNLayer<T>::get_weights(void) {
 }
 
 template <typename T>
-KWGCNLayer<T>* kipfgcn(op::Operation<T>* input, graph<T>* struct_graph, unsigned output_channel, bool copy = true,
-                       bool needs_grad = true) {
+KWGCNLayer<T>* kipfgcn(op::Operation<T>* input, graph<T>* struct_graph, unsigned output_channel, bool copy, bool needs_grad) {
     return new KWGCNLayer<T>(input, struct_graph, output_channel, copy, needs_grad);
 }
 template KWGCNLayer<int>* kipfgcn(op::Operation<int>* input, graph<int>* struct_graph, unsigned output_channel,
-                                  bool copy = true, bool needs_grad = true);
+                                  bool, bool needs_grad);
 template KWGCNLayer<float>* kipfgcn(op::Operation<float>* input, graph<float>* struct_graph, unsigned output_channel,
-                                    bool copy = true, bool needs_grad = true);
+                                    bool copy, bool needs_grad);
 template KWGCNLayer<double>* kipfgcn(op::Operation<double>* input, graph<double>* struct_graph, unsigned output_channel,
-                                     bool copy = true, bool needs_grad = true);
+                                     bool copy, bool needs_grad);
 
 }  //  namespace layer
 }  //  namespace magmadnn

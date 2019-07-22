@@ -33,7 +33,7 @@ class graph {
     //  returns the number of edges in the graph
     inline unsigned get_size(void) { return E; }
     //  returns the pointer to the (sparse) adjMatrix
-    inline spMatrix::sparseMatrix<T>* get_adj_ptr(void) const { return *adjMatrix; }
+    inline spMatrix::sparseMatrix<T>* get_adj_ptr(void) const { return adjMatrix; }
     //  returns the format of the adjacency matrix
     inline spMatrix_format get_adj_format(void) const { return adjMatrix->get_data_format(); }
     //  returns the memory type of the adjacency matrix

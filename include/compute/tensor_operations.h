@@ -33,3 +33,5 @@
 #include "dropout/dropoutop.h"
 #include "flatten/flattenop.h"
 #include "pooling/poolingop.h"
+
+#include "gcnconv/gcnconvop.h"

@@ -21,7 +21,7 @@ namespace layer {
 template <typename T>
 class KWGCNLayer : public Layer<T> {
    protected:
-    Tensor<T>* weight_tensor;
+    Tensor<T>* weights_tensor;
     graph<T>* struct_graph;
     op::Operation<T>* weights;
     spMatrix::sparseMatrix<T>* transition_matrix;

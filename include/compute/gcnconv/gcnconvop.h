@@ -24,7 +24,7 @@ namespace op {
 template <typename T>
 class GCNConvOp : public Operation<T> {
    public:
-    GCNConvOp(const spMatrix::sparseMatrix<T>* a, Operation<T>* b, Operation<T>* c, bool copy = true, bool needs_grad = true);
+    GCNConvOp(spMatrix::sparseMatrix<T>* a, Operation<T>* b, Operation<T>* c, bool copy = true, bool needs_grad = true);
     ~GCNConvOp(void);
     inline std::string to_string(void) {
         return "GCNCONV( " + a->to_string() + " * " + b->to_string() + " * " + c->to_string() + " )";

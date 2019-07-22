@@ -13,14 +13,6 @@
 
 #include "cusparse.h"
 //#include "magma.h"  //  todo: add support
-
-#if defined(USE_CUSPARSE_NEW_API)
-#include "sparseMatrix/sparseMatrix_cuda_10010.h"
-#elif defined(USE_CUSPARSE_OLD_API)
-#include "sparseMatrix/sparseMatrix_cuda_legacy.h"
-#endif
-
-
 #endif
 
 namespace magmadnn {
@@ -62,7 +54,7 @@ class sparseMatrix {
     //  returns whether the descriptor is set
     bool has_descriptor(void) const { return _descriptor_is_set; }
     //  returns a void pointer to the descriptor
-    void* get_descriptor(void) const { return _descriptor; }
+    virtual void* get_descriptor(void) const { return _descriptor; }
     //  returns the memory type of the matrix data
     inline memory_t get_memory_type(void) { return _mem_type; }
     //  writes the (uncompressed) matrix into output and multiplies it with alpha
@@ -110,7 +102,7 @@ class spMatrix_DENSE : public sparseMatrix<T> {
     inline Tensor<T>* get_data_ptr(void) const { return _data; }
     //  writes the matrix into output and multiplies it with alpha
     //  output must have the same shape with this object
-    inline void get_uncompressed_mat(Tensor<T>* output, T alpha) const {
+    inline void get_uncompressed_mat(Tensor<T>* output, T alpha = (T) 1) const {
         assert(T_IS_MATRIX(output));
         assert(output->get_shape(0) == this->_dim0);
         assert(output->get_shape(1) == this->_dim1);
@@ -134,10 +126,6 @@ class spMatrix_DENSE : public sparseMatrix<T> {
     inline virtual void set(unsigned i, unsigned j, T val) { _data->set({i, j}, val); }
     //  returns the sum of elements in row rowIdx
     virtual T rowSum(unsigned rowIdx) const;
-    inline virtual void transpose(void) {
-        assert(this->_mem_type != HOST);  //  cannot use this routine
-        internal::transpose_full(_data, _data);
-    }
 };
 
 //  abstract base class for sparse matrix in CSR format
@@ -172,7 +160,7 @@ class spMatrix_CSR : public sparseMatrix<T> {
     inline Tensor<int>* get_col_ptr(void) const { return _colIdx; }
     //  writes the (uncompressed) adjacency matrix into output
     //  output must have the same shape with this object and is assumed to be all zero
-    void get_uncompressed_mat(Tensor<T>* output, T alpha) const;
+    void get_uncompressed_mat(Tensor<T>* output, T alpha = (T) 1) const;
     //  return the value at location (i, j)
     T get(unsigned i, unsigned j) const;
     //  returns a vector storing all the values at row rowIdx
@@ -201,7 +189,7 @@ class hostSpMatrix_DENSE : public spMatrix_DENSE<T> {
     ~hostSpMatrix_DENSE(void);
 };
 
-//  concrete class for sparse matrix in CSR format on host memory
+//  concrete class for sparse matrix in CSR cusparseSpMatrix_DENSEformat on host memory
 template <typename T>
 class hostSpMatrix_CSR : public spMatrix_CSR<T> {
    private:
@@ -217,17 +205,98 @@ class hostSpMatrix_CSR : public spMatrix_CSR<T> {
 };
 
 #if defined(_HAS_CUDA_)
-#if defined(USE_CUSPARSE_NEW_API)
+#if (CUDART_VERSION >= 100100)
+//  Concrete class for sparse matrix in cusparse dense format in GPU memory
+//  Wrapper for cusparseDnMatDescr_t object in CUDA version 10.1+.
+//  The interanal _data is stored in row-major (as a normal Tensor) but cusparse currently only takes column-major dense
+//  matrices
+//  Hence the descriptor stores the dimensions as transposed and an extra transpose would be needed when calling
+//  cusparse routines
+//  todo: wait for cusparse support on row-major order
+template <typename T>
+class cusparseSpMatrix_DENSE_10010 : public spMatrix_DENSE<T> {
+   private:
+    cusparseSpMatrix_DENSE_10010(const cusparseSpMatrix_DENSE_10010<T>& that) = delete;
+    cusparseSpMatrix_DENSE_10010<T>& operator=(const cusparseSpMatrix_DENSE_10010<T>& that) = delete;
+    cudaDataType_t cuda_data_type;
+    void createDesc(void);
+
+   public:
+    cusparseSpMatrix_DENSE_10010(const Tensor<T>* spMatrixTensorPtr, memory_t mem_type = MANAGED, bool copy = false);
+    cusparseSpMatrix_DENSE_10010(const std::vector<T>& diag, memory_t mem_type = MANAGED);
+    cusparseSpMatrix_DENSE_10010(unsigned dim0, unsigned dim1, memory_t mem_type = MANAGED);
+    ~cusparseSpMatrix_DENSE_10010(void);
+    inline cudaDataType_t get_data_type(void) { return this->cuda_data_type; }
+};
+
+//  concrete class for sparse matrix in cusparse CSR format in GPU memory
+//  wrapper for cusparseSpMatDescr_t with format CSR
+template <typename T>
+class cusparseSpMatrix_CSR_10010 : public spMatrix_CSR<T> {
+   private:
+    cusparseSpMatrix_CSR_10010(const cusparseSpMatrix_CSR_10010<T>& that) = delete;
+    cusparseSpMatrix_CSR_10010<T>& operator=(const cusparseSpMatrix_CSR_10010<T>& that) = delete;
+    cudaDataType_t cuda_data_type;
+    void createDesc(void);
+
+   public:
+    cusparseSpMatrix_CSR_10010(const Tensor<T>* spMatrixTensorPtr, memory_t mem_type = MANAGED);
+    cusparseSpMatrix_CSR_10010(const std::vector<T>& diag, memory_t mem_type = MANAGED);
+    cusparseSpMatrix_CSR_10010(unsigned dim0, unsigned dim1, const std::vector<T>& valList,
+                               const std::vector<int>& rowAccum, const std::vector<int>& colIdx,
+                               memory_t mem_type = MANAGED);
+    ~cusparseSpMatrix_CSR_10010(void);
+    inline cudaDataType_t get_data_type(void) { return this->cuda_data_type; }
+};
 template <typename T>
 using cusparseSpMatrix_DENSE = cusparseSpMatrix_DENSE_10010<T>;
 template <typename T>
-using cusparseSpMatrix_CSR =  cusparseSpMatrix_CSR_10010<T>;
-#elif defined(USE_CUSPARSE_OLD_API)
+using cusparseSpMatrix_CSR = cusparseSpMatrix_CSR_10010<T>;
+#elif (CUDART_VERSION >= 10010)
+//  Concrete class for sparse matrix in cusparse dense format in GPU memory
+//  For dense matrix used in CUDA version below 10.1
+//  wrapper for tensor on device
+//  Since cusparse takes column-major dense matrix but Tensor stores in row-major format, internal _data are stored as
+//  column-major. Hense whenever a object is uesd in cusparse, an extra transpose and a reshape will be needed
+template <typename T>
+class cusparseSpMatrix_DENSE_LEGACY : public spMatrix_DENSE<T> {
+   private:
+    cusparseSpMatrix_DENSE_LEGACY(const cusparseSpMatrix_DENSE_LEGACY<T>& that) = delete;
+    cusparseSpMatrix_DENSE_LEGACY<T>& operator=(const cusparseSpMatrix_DENSE_LEGACY<T>& that) = delete;
+    cudaDataType_t cuda_data_type;
+
+   public:
+    cusparseSpMatrix_DENSE_LEGACY(const Tensor<T>* spMatrixTenorPtr, memory_t mem_type = MANAGED, bool copy = false);
+    cusparseSpMatrix_DENSE_LEGACY(const std::vector<T>& diag, memory_t mem_type = MANAGED);
+    cusparseSpMatrix_DENSE_LEGACY(unsigned dim0, unsigned dim1, memory_t mem_type = MANAGED);
+    ~cusparseSpMatrix_DENSE_LEGACY(void);
+    inline cudaDataType_t get_data_type(void) { return this->cuda_data_type; }
+};
+
+//  concrete class for sparse matrix in cusparse CSR format
+template <typename T>
+class cusparseSpMatrix_CSR_LEGACY : public spMatrix_CSR<T> {
+    private:
+    cusparseSpMatrix_CSR_LEGACY(const cusparseSpMatrix_CSR_LEGACY<T>& that) = delete;
+    cusparseSpMatrix_CSR_LEGACY<T> operator=(const cusparseSpMatrix_CSR_LEGACY<T>& that) = delete;
+    cudaDataType_t cuda_data_type;
+    void createDesc(void);
+
+   public:
+    cusparseSpMatrix_CSR_LEGACY(const Tensor<T>* spMatrixTensorPtr, memory_t mem_type = MANAGED);
+    cusparseSpMatrix_CSR_LEGACY(const std::vector<T>& diag, memory_t mem_type = MANAGED);
+    cusparseSpMatrix_CSR_LEGACY(unsigned dim0, unsigned dim1, const std::vector<T>& valList,
+                               const std::vector<int>& rowAccum, const std::vector<int>& colIdx,
+                               memory_t mem_type = MANAGED);
+    ~cusparseSpMatrix_CSR_LEGACY(void);
+    inline cudaDataType_t get_data_type(void) { return this->cuda_data_type; }
+};
 template <typename T>
 using cusparseSpMatrix_DENSE = cusparseSpMatrix_DENSE_LEGACY<T>;
 template <typename T>
-using cusparseSpMatrix_CSR =  cusparseSpMatrix_CSR_LEGACY<T>;
+using cusparseSpMatrix_CSR = cusparseSpMatrix_CSR_LEGACY<T>;
 #endif
+
 #endif
 
 //  returns a new sparseMatrix pointer that stores spMatrixTensorPtr in given format

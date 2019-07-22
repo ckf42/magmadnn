@@ -18,25 +18,6 @@
 #define USE_GPU
 #endif
 
-#include <cuda_runtime_api.h>
-
-//  can only use one of the cusparse api, prefer new one
-#if defined(USE_CUSPARSE_NEW_API)
-#undef USE_CUSPARSE_OLD_API
-#elif defined(USE_CUSPARSE_OLD_API)
-#undef USE_CUSPARSE_NEW_API
-#endif
-
-//  not specified which api to use
-#if !defined(USE_CUSPARSE_NEW_API) && !defined(USE_CUSPARSE_OLD_API)
-//  determine according to cuda version
-#if (CUDART_VERSION >= 10010)
-#define USE_CUSPARSE_NEW_API
-#else
-#define USE_CUSPARSE_OLD_API
-#endif
-#endif
-
 #include "init_finalize.h"
 #include "types.h"
 #include "utilities_internal.h"
@@ -59,3 +40,4 @@
 #include "dataloader/dataloaders.h"
 
 #include "sparseMatrix/sparseMatrix.h"
+#include "graph/graph.h"

@@ -5,9 +5,10 @@ template <typename T>
 unsigned graph<T>::getE(const Tensor<T>* adjMatrixTensorPtr) {
     unsigned counter = 0;
     T edge_weight, opposite_edge_weight;
-    for (unsigned i = 0; i < V - 1; ++i) {
+    unsigned _V = adjMatrixTensorPtr->get_shape(0);
+    for (unsigned i = 0; i < _V - 1; ++i) {
         assert(adjMatrixTensorPtr->get({i, i}) == 0 && "No self loop allowed");
-        for (unsigned j = i + 1; j < V; ++j) {
+        for (unsigned j = i + 1; j < _V; ++j) {
             edge_weight = adjMatrixTensorPtr->get({i, j});
             assert(edge_weight >= 0 && "Edge weight must all be nonnegative");
             opposite_edge_weight = adjMatrixTensorPtr->get({j, i});
@@ -103,12 +104,12 @@ spMatrix::sparseMatrix<T>* graph<T>::get_KW_transit_mat(spMatrix_format return_f
 					idx++;
 				}
 			}
-			row[i + 1] = row[i] + counter;
+			rowV[i + 1] = rowV[i] + counter;
 		}
 	}
 	else /* if (dynamic_cast<spMatrix::spMatrix_CSR<T>*>(adjMatrix) != nullptr) */ {  //  is of CSR format
 		spMatrix::spMatrix_CSR<T>* castedAdj = AS_TYPE(spMatrix::spMatrix_CSR<T>*, adjMatrix);
-		T A = (T)0, newA = (T)0;
+		T A = (T)0;
 		unsigned writePtr = 0;
 		int begin = 0, end = 0;
 		for (unsigned i = 0; i < V; ++i) {
@@ -126,7 +127,7 @@ spMatrix::sparseMatrix<T>* graph<T>::get_KW_transit_mat(spMatrix_format return_f
 					has_add_loop = true;
 				}
 				A = castedAdj->get_val_ptr()->get(begin);
-				valV[writePtr] = (A + 1) / std::sqrt(Dtilde[i] * Dtilde[j]);
+				valV[writePtr] = (A + 1) / std::sqrt(Dtilde[i] * Dtilde[thisCol]);
 				colV[writePtr] = thisCol;
 				++writePtr;
 				begin++;

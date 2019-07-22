@@ -13,6 +13,7 @@
 
 namespace magmadnn {
 
+//  todo: switch to nvGRPAH?
 template <typename T>
 class graph {
    private:

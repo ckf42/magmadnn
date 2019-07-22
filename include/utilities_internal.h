@@ -50,10 +50,16 @@ inline void curandAssert(curandStatus_t code, const char *file, int line, bool a
 
 #define cusparseErrchk(ans) \
     { cusparseAssert((ans), __FILE__, __LINE__); }
-inline void cusparseAssert(cusparseStatus_t code, const char* file, int line, bool abort = true) {
-	if (code != CUSPARSE_STATUS_SUCCESS) {
-		fprintf(stderr, "CuSparseAssert: %d %s %s %d\n", code, cusparseGetErrorString(code), file, line);
-	}
+inline void cusparseAssert(cusparseStatus_t code, const char *file, int line, bool abort = true) {
+    if (code != CUSPARSE_STATUS_SUCCESS) {
+#if defined(USE_CUSPARSE_NEW_API)
+        fprintf(stderr, "CuSparseAssert: %d %s %s %d\n", code, cusparseGetErrorString(code), file, line);
+#elif defined(USE_CUSPARSE_OLD_API)
+		//  no cusparseGetErrorString before 10.1
+        fprintf(stderr, "CuSparseAssert: %d %s %d\n", code, file, line);
+#endif
+        if (abort) exit(code);
+    }
 }
 
 #endif
@@ -70,7 +76,7 @@ inline void cusparseAssert(cusparseStatus_t code, const char* file, int line, bo
 #define T_IS_SAME_MEMORY_TYPE(x_ptr, y_ptr) ((x_ptr)->get_memory_type() == (y_ptr)->get_memory_type())
 #define OP_IS_SAME_MEMORY_TYPE(x_ptr, y_ptr) ((x_ptr)->get_memory_type() == (y_ptr)->get_memory_type())
 
-#define AS_TYPE(type_name, var) (reinterpret_cast<type_name>(var))
+#define AS_TYPE(type_name, var) (reinterpret_cast<type_name>((var)))
 
 namespace magmadnn {
 namespace internal {

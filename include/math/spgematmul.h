@@ -22,6 +22,7 @@ void spgematmul(T alpha, bool trans_A, spMatrix::sparseMatrix<T>* A, bool trans_
                 T beta, spMatrix::spMatrix_DENSE<T>* C, void* settings = nullptr);
 
 #if defined(_HAS_CUDA_)
+#if defined(CUSPARSE_NEW_API)
 struct spgemm_cusparse_settings {
     cusparseSpMMAlg_t algo;
     void* workspace;
@@ -30,10 +31,14 @@ struct spgemm_cusparse_settings {
 //  implement with cuSPARSE cusparseSpMM
 //  assume settings.workspace holds enough space for computation
 template <typename T>
-void spgematmul_cusparse(T alpha, bool trans_A, spMatrix::cusparseSpMatrix_CSR<T>* A, bool trans_B,
+void spgematmul_cusparse(T alpha, bool trans_A, spMatrix::cusparseSpMatrix<T>* A, bool trans_B,
                          spMatrix::cusparseSpMatrix_DENSE<T>* B, T beta, spMatrix::cusparseSpMatrix_DENSE<T>* C,
                          spgemm_cusparse_settings settings);
-
+#elif defined(USE_CUSPARSE_OLD_API)
+template <typename T>
+void spgematmul_cusparse_csr(T alpha, bool trans_a, spMatrix::cusparseSpMatrix_CSR<T>* A, bool trans_B,
+                             spMatrix::cusparseSpMatrix_DENSE<T>* B, T beta, spMatrix::cusparseSpMatrix_DENSE<T>* C);
+#endif
 #endif
 
 }  // namespace math

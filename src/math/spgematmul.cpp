@@ -25,13 +25,13 @@ void spgematmul(T alpha, bool trans_A, spMatrix::sparseMatrix<T>* A, bool trans_
         assert(B->get_data_format() == SPARSEMATRIX_FORMAT_CUSPARSE_DENSE);
         assert(C->get_data_format() == SPARSEMATRIX_FORMAT_CUSPARSE_DENSE);
         assert(settings != nullptr);
-#if (CUDART_VERSION >= 10010)
+#if (CUDART_VERSION >= 100100)
         spgematmul_cusparse<T>(alpha, trans_A, A, trans_B, AS_TYPE(spMatrix::cusparseSpMatrix_DENSE<T>*, B), beta,
                                AS_TYPE(spMatrix::cusparseSpMatrix_DENSE<T>*, C),
                                *AS_TYPE(spgemm_cusparse_settings*, settings), col_major_output);
-#elif (CUDART_VERSION < 10010)
+#elif (CUDART_VERSION < 100100)
         spgematmul_cusparse_csr<T>(alpha, trans_A, AS_TYPE(spMatrix::cusparseSpMatrix_CSR<T>*, A), trans_B,
-                                   AS_TYPE(spMatrix::cusparseSpMatrix_DENSE<T>*, B), trans_B, beta,
+                                   AS_TYPE(spMatrix::cusparseSpMatrix_DENSE<T>*, B), beta,
                                    AS_TYPE(spMatrix::cusparseSpMatrix_DENSE<T>*, C), col_major_output);
 #endif
     } else if (A->get_data_format() == SPARSEMATRIX_FORMAT_CUSPARSE_DENSE) {
@@ -54,7 +54,7 @@ template void spgematmul<double>(double alpha, bool trans_A, spMatrix::sparseMat
                                  void* settings, bool col_major_output);
 
 #if defined(_HAS_CUDA_)
-#if (CUDART_VERSION >= 10010)
+#if (CUDART_VERSION >= 100100)
 template <typename T>
 void spgematmul_cusparse(T alpha, bool trans_A, spMatrix::sparseMatrix<T>* A, bool trans_B,
                          spMatrix::cusparseSpMatrix_DENSE<T>* B, T beta, spMatrix::cusparseSpMatrix_DENSE<T>* C,
@@ -84,7 +84,7 @@ template void spgematmul_cusparse<double>(double alpha, bool trans_A, spMatrix::
                                           spMatrix::cusparseSpMatrix_DENSE<double>* B, double beta,
                                           spMatrix::cusparseSpMatrix_DENSE<double>* C,
                                           spgemm_cusparse_settings settings, bool col_major_output);
-#elif (CUDART_VERSION < 10010)
+#elif (CUDART_VERSION < 100100)
 template <typename T>
 void spgematmul_cusparse_csr(T alpha, bool trans_a, spMatrix::cusparseSpMatrix_CSR<T>* A, bool trans_B,
                              spMatrix::cusparseSpMatrix_DENSE<T>* B, T beta, spMatrix::cusparseSpMatrix_DENSE<T>* C,

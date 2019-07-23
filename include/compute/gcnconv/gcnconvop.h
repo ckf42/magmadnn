@@ -37,7 +37,7 @@ class GCNConvOp : public Operation<T> {
     inline void init_grad(void);
     inline void init_aTgrad(void);
 #if defined(_HAS_CUDA_)
-#if (CUDART_VERSION >= 10010)
+#if (CUDART_VERSION >= 100100)
     inline void init_cusparse_settings(cusparseSpMMAlg_t alg);
     inline void init_aTgrad_cusparse_settings(cusparseSpMMAlg_t alg);
 #endif

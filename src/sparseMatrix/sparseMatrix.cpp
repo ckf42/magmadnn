@@ -326,7 +326,7 @@ template class hostSpMatrix_CSR<float>;
 template class hostSpMatrix_CSR<double>;
 
 #if defined(_HAS_CUDA_)
-#if (CUDART_VERSION >= 10010)
+#if (CUDART_VERSION >= 100100)
 //  todo: clean up
 //  for concrete class cusparseSpMatrix_DENSE_10010
 template <typename T>
@@ -537,7 +537,7 @@ cusparseSpMatrix_CSR_10010<double>::cusparseSpMatrix_CSR_10010(unsigned dim0, un
 template class cusparseSpMatrix_CSR_10010<int>;
 template class cusparseSpMatrix_CSR_10010<float>;
 template class cusparseSpMatrix_CSR_10010<double>;
-#elif (CUDART_VERSION < 10010)
+#elif (CUDART_VERSION < 100100)
 template <typename T>
 cusparseSpMatrix_DENSE_LEGACY<T>::cusparseSpMatrix_DENSE_LEGACY(const Tensor<T>* spMatrixTenorPtr, memory_t mem_type,
                                                                 bool copy)
@@ -595,7 +595,7 @@ template <typename T>
 cusparseSpMatrix_DENSE_LEGACY<T>::~cusparseSpMatrix_DENSE_LEGACY(void) {
     /* empty */
 }
-//  template class cusparseSpMatrix_DENSE_LEGACY<int>;  //  no int
+template class cusparseSpMatrix_DENSE_LEGACY<int>;  //  no int
 template class cusparseSpMatrix_DENSE_LEGACY<float>;
 template class cusparseSpMatrix_DENSE_LEGACY<double>;
 
@@ -677,11 +677,12 @@ cusparseSpMatrix_CSR_LEGACY<double>::cusparseSpMatrix_CSR_LEGACY(unsigned dim0, 
 template <typename T>
 cusparseSpMatrix_CSR_LEGACY<T>::~cusparseSpMatrix_CSR_LEGACY(void) {
     if (this->_descriptor_is_set) {
-        cusparseDestroyMatDescr(*AS_TYPE(cusparseMatDescr_t*, this->_dscriptor))
-        delete this->_descriptor;
+        cusparseDestroyMatDescr(*AS_TYPE(cusparseMatDescr_t*, this->_descriptor));
+        delete AS_TYPE(cusparseMatDescr_t*, this->_descriptor);
         this->_descriptor_is_set = false;
     }
 }
+template class cusparseSpMatrix_CSR_LEGACY<int>;
 template class cusparseSpMatrix_CSR_LEGACY<float>;
 template class cusparseSpMatrix_CSR_LEGACY<double>;
 #endif

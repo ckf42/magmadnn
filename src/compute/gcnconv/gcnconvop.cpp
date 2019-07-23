@@ -4,7 +4,7 @@ namespace magmadnn {
 namespace op {
 
 #if defined(_HAS_CUDA_)
-#if (CUDART_VERSION >= 10010)
+#if (CUDART_VERSION >= 100100)
 template <typename T>
 void GCNConvOp<T>::init_cusparse_settings(cusparseSpMMAlg_t alg) {
     std::fprintf(stderr, "Requested data type for GCNConvOp is not supported.\n");
@@ -44,7 +44,7 @@ void GCNConvOp<double>::init_aTgrad_cusparse_settings(cusparseSpMMAlg_t alg) {
     internal::set_cusparse_spmm_settings(aTgrad_settings, CUDA_R_64F, &const_one, true, a, false, grad_wrapper,
                                          &const_zero, aTgrad_wrapper, alg);
 }
-#elif (CUDART_VERSION < 10010)
+#elif (CUDART_VERSION < 100100)
 
 #endif
 #endif
@@ -64,7 +64,7 @@ void GCNConvOp<T>::init_eval(void) {
             dense_format = SPARSEMATRIX_FORMAT_CUSPARSE_DENSE;
             this->b_wrapper = new spMatrix::cusparseSpMatrix_DENSE<T>(n_vert_in, n_channel_in, this->mem_type);
             this->ab_wrapper = new spMatrix::cusparseSpMatrix_DENSE<T>(n_vert_out, n_channel_in, this->mem_type);
-#if (CUDART_VERSION >= 100100)
+#if (CUDART_VERSION >= 1001000)
             init_cusparse_settings(CUSPARSE_CSRMM_ALG1);
 #endif
             break;
@@ -86,7 +86,7 @@ void GCNConvOp<T>::init_grad(void) {
 #if defined(_HAS_CUDA_)
         case SPARSEMATRIX_FORMAT_CUSPARSE_DENSE:
             this->grad_wrapper = new spMatrix::cusparseSpMatrix_DENSE<T>(n_vert_out, n_channel_out, this->mem_type);
-#if (CUDART_VERSION >= 100100)
+#if (CUDART_VERSION >= 1001000)
             init_aTgrad_cusparse_settings(CUSPARSE_CSRMM_ALG1);
 #endif
             break;
@@ -107,7 +107,7 @@ void GCNConvOp<T>::init_aTgrad(void) {
 #if defined(_HAS_CUDA_)
         case SPARSEMATRIX_FORMAT_CUSPARSE_DENSE:
             this->aTgrad_wrapper = new spMatrix::cusparseSpMatrix_DENSE<T>(n_vert_in, n_channel_out, this->mem_type);
-#if (CUDART_VERSION >= 100100)
+#if (CUDART_VERSION >= 1001000)
             init_aTgrad_cusparse_settings(CUSPARSE_CSRMM_ALG1);
 #endif
             break;
@@ -182,18 +182,24 @@ GCNConvOp<T>::~GCNConvOp(void) {
     }
     if (this->ab_settings != nullptr) {
 #if defined(_HAS_CUDA_)
+#if (CUDART_VERSION >= 100100)
+		//  should only be set for version 10.1+
         if (this->dense_format == SPARSEMATRIX_FORMAT_CUSPARSE_DENSE) {
             cudaErrchk(cudaFree(AS_TYPE(math::spgemm_cusparse_settings*, this->ab_settings)->workspace));
             delete AS_TYPE(math::spgemm_cusparse_settings*, this->ab_settings);
         }
 #endif
+#endif
     }
     if (this->aTgrad_settings != nullptr) {
 #if defined(_HAS_CUDA_)
+#if (CUDART_VERSION >= 100100)
+        //  should only be set for version 10.1+
         if (this->dense_format == SPARSEMATRIX_FORMAT_CUSPARSE_DENSE) {
             cudaErrchk(cudaFree(AS_TYPE(math::spgemm_cusparse_settings*, this->aTgrad_settings)->workspace));
             delete AS_TYPE(math::spgemm_cusparse_settings*, this->aTgrad_settings);
         }
+#endif
 #endif
     }
 }

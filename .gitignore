@@ -49,3 +49,9 @@ examples/bin/*
 # doxygen folders
 # docs/html/*
 docs/latex/*
+/.vs
+/mdnn_local.vcxproj.user
+/mdnn_local.vcxproj.filters
+/mdnn_local.vcxproj
+/mdnn_local.sln
+/cpp.hint

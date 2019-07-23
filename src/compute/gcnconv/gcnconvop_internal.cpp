@@ -4,7 +4,7 @@ namespace magmadnn {
 namespace internal {
 
 #if defined(_HAS_CUDA_)
-#if (CUDART_VERSION >= 10010)
+#if (CUDART_VERSION >= 100100)
 template <typename T>
 void set_cusparse_spmm_settings(void* settings, cudaDataType data_type, const T* alpha, bool spMatDoTrans,
                                 spMatrix::sparseMatrix<T>* spMat, bool dnMatDoTrans, spMatrix::spMatrix_DENSE<T>* dnMat,
@@ -122,7 +122,7 @@ template void set_cusparse_spmm_settings<double>(void* settings, cudaDataType da
                                                  bool dnMatDoTrans, spMatrix::spMatrix_DENSE<double>* dnMat,
                                                  const double* beta, spMatrix::spMatrix_DENSE<double>* dnOut,
                                                  cusparseSpMMAlg_t alg);
-#elif (CUDART_VERSION < 10010)
+#elif (CUDART_VERSION < 100100)
 
 #endif
 #endif

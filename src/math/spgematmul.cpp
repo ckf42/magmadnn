@@ -92,7 +92,6 @@ void spgematmul_cusparse_csr(T alpha, bool trans_a, spMatrix::cusparseSpMatrix_C
     std::fprintf(stderr, "Data type not recongnized.\n");
 }
 template <>
-//  todo: make it output in appropriate shape
 void spgematmul_cusparse_csr(float alpha, bool trans_A, spMatrix::cusparseSpMatrix_CSR<float>* A, bool trans_B,
                              spMatrix::cusparseSpMatrix_DENSE<float>* B, float beta,
                              spMatrix::cusparseSpMatrix_DENSE<float>* C, bool col_major_output) {
@@ -103,7 +102,22 @@ void spgematmul_cusparse_csr(float alpha, bool trans_A, spMatrix::cusparseSpMatr
         A->get_shape(1), A->get_nnz(), &alpha, *AS_TYPE(cusparseMatDescr_t*, A->get_descriptor()),
         A->get_val_ptr()->get_ptr(), A->get_row_ptr()->get_ptr(), A->get_col_ptr()->get_ptr(),
         B->get_data_ptr()->get_ptr(), B->get_shape(1), &beta, C->get_data_ptr()->get_ptr(), C->get_shape(1)));
-    if (!col_major_output){
+    if (!col_major_output) {
+        internal::transpose_full_device(C->get_data_ptr(), C->get_data_ptr());
+    }
+}
+template <>
+void spgematmul_cusparse_csr(double alpha, bool trans_A, spMatrix::cusparseSpMatrix_CSR<double>* A, bool trans_B,
+                             spMatrix::cusparseSpMatrix_DENSE<double>* B, double beta,
+                             spMatrix::cusparseSpMatrix_DENSE<double>* C, bool col_major_output) {
+    cusparseErrchk(cusparseDcsrmm2(
+        ::magmadnn::internal::MAGMADNN_SETTINGS->cusparse_handle,
+        trans_A ? CUSPARSE_OPERATION_NON_TRANSPOSE : CUSPARSE_OPERATION_TRANSPOSE,
+        trans_B ? CUSPARSE_OPERATION_TRANSPOSE : CUSPARSE_OPERATION_NON_TRANSPOSE, A->get_shape(0), A->get_shape(1),
+        A->get_shape(1), A->get_nnz(), &alpha, *AS_TYPE(cusparseMatDescr_t*, A->get_descriptor()),
+        A->get_val_ptr()->get_ptr(), A->get_row_ptr()->get_ptr(), A->get_col_ptr()->get_ptr(),
+        B->get_data_ptr()->get_ptr(), B->get_shape(1), &beta, C->get_data_ptr()->get_ptr(), C->get_shape(1)));
+    if (!col_major_output) {
         internal::transpose_full_device(C->get_data_ptr(), C->get_data_ptr());
     }
 }

@@ -52,9 +52,9 @@ inline void curandAssert(curandStatus_t code, const char *file, int line, bool a
     { cusparseAssert((ans), __FILE__, __LINE__); }
 inline void cusparseAssert(cusparseStatus_t code, const char *file, int line, bool abort = true) {
     if (code != CUSPARSE_STATUS_SUCCESS) {
-#if (CUDART_VERSION >= 100100)
+#if (CUDART_VERSION >= 10010)
         fprintf(stderr, "CuSparseAssert: %d %s %s %d\n", code, cusparseGetErrorString(code), file, line);
-#elif (CUDART_VERSION >= 10010)
+#elif (CUDART_VERSION < 10010)
 		//  no cusparseGetErrorString before 10.1
         fprintf(stderr, "CuSparseAssert: %d %s %d\n", code, file, line);
 #endif

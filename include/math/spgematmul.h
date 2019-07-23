@@ -22,7 +22,7 @@ void spgematmul(T alpha, bool trans_A, spMatrix::sparseMatrix<T>* A, bool trans_
                 T beta, spMatrix::spMatrix_DENSE<T>* C, void* settings = nullptr, bool col_major_output = true);
 
 #if defined(_HAS_CUDA_)
-#if (CUDART_VERSION >= 100100)
+#if (CUDART_VERSION >= 10010)
 struct spgemm_cusparse_settings {
     cusparseSpMMAlg_t algo;
     void* workspace;
@@ -34,7 +34,7 @@ template <typename T>
 void spgematmul_cusparse(T alpha, bool trans_A, spMatrix::sparseMatrix<T>* A, bool trans_B,
                          spMatrix::cusparseSpMatrix_DENSE<T>* B, T beta, spMatrix::cusparseSpMatrix_DENSE<T>* C,
                          spgemm_cusparse_settings settings, bool col_major_output = true);
-#elif (CUDART_VERSION >= 10010)
+#elif (CUDART_VERSION < 10010)
 template <typename T>
 void spgematmul_cusparse_csr(T alpha, bool trans_a, spMatrix::cusparseSpMatrix_CSR<T>* A, bool trans_B,
                              spMatrix::cusparseSpMatrix_DENSE<T>* B, T beta, spMatrix::cusparseSpMatrix_DENSE<T>* C, bool col_major_output = true);

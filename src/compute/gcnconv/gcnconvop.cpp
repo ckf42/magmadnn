@@ -4,7 +4,7 @@ namespace magmadnn {
 namespace op {
 
 #if defined(_HAS_CUDA_)
-#if (CUDART_VERSION >= 100100)
+#if (CUDART_VERSION >= 10010)
 template <typename T>
 void GCNConvOp<T>::init_cusparse_settings(cusparseSpMMAlg_t alg) {
     std::fprintf(stderr, "Requested data type for GCNConvOp is not supported.\n");
@@ -44,11 +44,8 @@ void GCNConvOp<double>::init_aTgrad_cusparse_settings(cusparseSpMMAlg_t alg) {
     internal::set_cusparse_spmm_settings(aTgrad_settings, CUDA_R_64F, &const_one, true, a, false, grad_wrapper,
                                          &const_zero, aTgrad_wrapper, alg);
 }
-#elif (CUDART_VERSION >= 10010)
-template <typename T>
-void GCNConvOp<T>::init_cusparse_settings(cusparseSpMMAlg_t alg){/* empty */}
-template <typename T>
-void GCNConvOp<T>::init_aTgrad_cusparse_settings(cusparseSpMMAlg_t alg){/* empty */}
+#elif (CUDART_VERSION < 10010)
+
 #endif
 #endif
 
@@ -67,7 +64,9 @@ void GCNConvOp<T>::init_eval(void) {
             dense_format = SPARSEMATRIX_FORMAT_CUSPARSE_DENSE;
             this->b_wrapper = new spMatrix::cusparseSpMatrix_DENSE<T>(n_vert_in, n_channel_in, this->mem_type);
             this->ab_wrapper = new spMatrix::cusparseSpMatrix_DENSE<T>(n_vert_out, n_channel_in, this->mem_type);
+#if (CUDART_VERSION >= 100100)
             init_cusparse_settings(CUSPARSE_CSRMM_ALG1);
+#endif
             break;
 #endif
         default:
@@ -86,9 +85,10 @@ void GCNConvOp<T>::init_grad(void) {
             break;
 #if defined(_HAS_CUDA_)
         case SPARSEMATRIX_FORMAT_CUSPARSE_DENSE:
-            this->grad_wrapper =
-                new spMatrix::cusparseSpMatrix_DENSE<T>(n_vert_out, n_channel_out, this->mem_type);
+            this->grad_wrapper = new spMatrix::cusparseSpMatrix_DENSE<T>(n_vert_out, n_channel_out, this->mem_type);
+#if (CUDART_VERSION >= 100100)
             init_aTgrad_cusparse_settings(CUSPARSE_CSRMM_ALG1);
+#endif
             break;
 #endif
         default:
@@ -106,9 +106,10 @@ void GCNConvOp<T>::init_aTgrad(void) {
             break;
 #if defined(_HAS_CUDA_)
         case SPARSEMATRIX_FORMAT_CUSPARSE_DENSE:
-            this->aTgrad_wrapper =
-                new spMatrix::cusparseSpMatrix_DENSE<T>(n_vert_in, n_channel_out, this->mem_type);
+            this->aTgrad_wrapper = new spMatrix::cusparseSpMatrix_DENSE<T>(n_vert_in, n_channel_out, this->mem_type);
+#if (CUDART_VERSION >= 100100)
             init_aTgrad_cusparse_settings(CUSPARSE_CSRMM_ALG1);
+#endif
             break;
 #endif
         default:
@@ -119,8 +120,7 @@ void GCNConvOp<T>::init_aTgrad(void) {
 }
 
 template <typename T>
-GCNConvOp<T>::GCNConvOp(spMatrix::sparseMatrix<T>* a, Operation<T>* b, Operation<T>* c, bool copy,
-                        bool needs_grad)
+GCNConvOp<T>::GCNConvOp(spMatrix::sparseMatrix<T>* a, Operation<T>* b, Operation<T>* c, bool copy, bool needs_grad)
     : Operation<T>({b, c}, needs_grad),
       a(a),
       b(b),
@@ -240,8 +240,8 @@ Tensor<T>* GCNConvOp<T>::_grad(Operation<T>* consumer, Operation<T>* var, Tensor
         }
         for (unsigned sample_idx = 0; sample_idx < n_samples; ++sample_idx) {
             this->grad_tensor_slice->copy_from(*grad, sample_idx * output_sample_size, output_sample_size);
-            math::spgematmul(const_one, true, a, false, this->grad_wrapper, const_zero, aTgrad_wrapper,
-                             aTgrad_settings, true);
+            math::spgematmul(const_one, true, a, false, this->grad_wrapper, const_zero, aTgrad_wrapper, aTgrad_settings,
+                             true);
             math::matmul(const_one, true, aTgrad_tensor_slice, true, c_tensor, const_zero, this->aTgradcT_tensor_slice);
             out->copy_from(*this->aTgradcT_tensor_slice, 0, input_sample_size, sample_idx * input_sample_size);
         }
@@ -270,8 +270,7 @@ template class GCNConvOp<float>;
 template class GCNConvOp<double>;
 
 template <typename T>
-GCNConvOp<T>* gcnconv(spMatrix::sparseMatrix<T>* a, Operation<T>* b, Operation<T>* c, bool copy,
-                      bool needs_grad) {
+GCNConvOp<T>* gcnconv(spMatrix::sparseMatrix<T>* a, Operation<T>* b, Operation<T>* c, bool copy, bool needs_grad) {
     return new GCNConvOp<T>(a, b, c, copy, needs_grad);
 }
 template GCNConvOp<int>* gcnconv(spMatrix::sparseMatrix<int>*, Operation<int>*, Operation<int>*, bool, bool);

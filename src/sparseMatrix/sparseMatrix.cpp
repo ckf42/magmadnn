@@ -326,7 +326,7 @@ template class hostSpMatrix_CSR<float>;
 template class hostSpMatrix_CSR<double>;
 
 #if defined(_HAS_CUDA_)
-#if (CUDART_VERSION >= 100100)
+#if (CUDART_VERSION >= 10010)
 //  todo: clean up
 //  for concrete class cusparseSpMatrix_DENSE_10010
 template <typename T>
@@ -537,11 +537,11 @@ cusparseSpMatrix_CSR_10010<double>::cusparseSpMatrix_CSR_10010(unsigned dim0, un
 template class cusparseSpMatrix_CSR_10010<int>;
 template class cusparseSpMatrix_CSR_10010<float>;
 template class cusparseSpMatrix_CSR_10010<double>;
-#elif (CUDART_VERSION >= 10010)
+#elif (CUDART_VERSION < 10010)
 template <typename T>
 cusparseSpMatrix_DENSE_LEGACY<T>::cusparseSpMatrix_DENSE_LEGACY(const Tensor<T>* spMatrixTenorPtr, memory_t mem_type,
                                                                 bool copy)
-    : spMatrix_DENSE<T>(0, 0, mem_type, SPARSEMATRIX_FORMAT_CUSPARSE_DENSE) {
+    : spMatrix_DENSE<T>(0, 0, mem_type, SPARSEMATRIX_FORMAT_CUSPARSE_DENSE), cuda_data_type(CUDA_R_32I) {
     assert(mem_type != HOST);
     std::fprintf(stderr, "Requested template type for cusparseSpMatrix_DENSE_LEGACY is not supported\n");
 }
@@ -561,7 +561,7 @@ cusparseSpMatrix_DENSE_LEGACY<double>::cusparseSpMatrix_DENSE_LEGACY(const Tenso
 }
 template <typename T>
 cusparseSpMatrix_DENSE_LEGACY<T>::cusparseSpMatrix_DENSE_LEGACY(const std::vector<T>& diag, memory_t mem_type)
-    : spMatrix_DENSE<T>(0, 0, mem_type, SPARSEMATRIX_FORMAT_CUSPARSE_DENSE), cuda_data_type(CUDA_R_64F) {
+    : spMatrix_DENSE<T>(0, 0, mem_type, SPARSEMATRIX_FORMAT_CUSPARSE_DENSE), cuda_data_type(CUDA_R_32I) {
     assert(mem_type != HOST);
     std::fprintf(stderr, "Requested template type for cusparseSpMatrix_DENSE_LEGACY is not supported\n");
 }
@@ -572,12 +572,12 @@ cusparseSpMatrix_DENSE_LEGACY<float>::cusparseSpMatrix_DENSE_LEGACY(const std::v
 }
 template <>
 cusparseSpMatrix_DENSE_LEGACY<double>::cusparseSpMatrix_DENSE_LEGACY(const std::vector<double>& diag, memory_t mem_type)
-    : spMatrix_DENSE<double>(diag, mem_type, SPARSEMATRIX_FORMAT_CUSPARSE_DENSE) {
+    : spMatrix_DENSE<double>(diag, mem_type, SPARSEMATRIX_FORMAT_CUSPARSE_DENSE), cuda_data_type(CUDA_R_64F) {
     assert(mem_type != HOST);
 }
 template <typename T>
 cusparseSpMatrix_DENSE_LEGACY<T>::cusparseSpMatrix_DENSE_LEGACY(unsigned dim0, unsigned dim1, memory_t mem_type)
-    : spMatrix_DENSE<T>(0, 0, mem_type, SPARSEMATRIX_FORMAT_CUSPARSE_DENSE) {
+    : spMatrix_DENSE<T>(0, 0, mem_type, SPARSEMATRIX_FORMAT_CUSPARSE_DENSE), cuda_data_type(CUDA_R_32I) {
     assert(mem_type != HOST);
     std::fprintf(stderr, "Requested template type for cusparseSpMatrix_DENSE_LEGACY is not supported\n");
 }
@@ -595,6 +595,9 @@ template <typename T>
 cusparseSpMatrix_DENSE_LEGACY<T>::~cusparseSpMatrix_DENSE_LEGACY(void) {
     /* empty */
 }
+//  template class cusparseSpMatrix_DENSE_LEGACY<int>;  //  no int
+template class cusparseSpMatrix_DENSE_LEGACY<float>;
+template class cusparseSpMatrix_DENSE_LEGACY<double>;
 
 template <typename T>
 void cusparseSpMatrix_CSR_LEGACY<T>::createDesc(void) {
@@ -606,7 +609,7 @@ void cusparseSpMatrix_CSR_LEGACY<T>::createDesc(void) {
 }
 template <typename T>
 cusparseSpMatrix_CSR_LEGACY<T>::cusparseSpMatrix_CSR_LEGACY(const Tensor<T>* spMatrixTensorPtr, memory_t mem_type)
-    : spMatrix_CSR<T>(spMatrixTensorPtr, mem_type, SPARSEMATRIX_FORMAT_CUSPARSE_CSR) {
+    : spMatrix_CSR<T>(spMatrixTensorPtr, mem_type, SPARSEMATRIX_FORMAT_CUSPARSE_CSR), cuda_data_type(CUDA_R_32I) {
     assert(mem_type != HOST);
     std::fprintf(stderr, "Requested template type for cusparseSpMatrix_CSR_LEGACY is not supported\n");
 }
@@ -626,7 +629,7 @@ cusparseSpMatrix_CSR_LEGACY<double>::cusparseSpMatrix_CSR_LEGACY(const Tensor<do
 }
 template <typename T>
 cusparseSpMatrix_CSR_LEGACY<T>::cusparseSpMatrix_CSR_LEGACY(const std::vector<T>& diag, memory_t mem_type)
-    : spMatrix_CSR<T>(diag, mem_type, SPARSEMATRIX_FORMAT_CUSPARSE_CSR) {
+    : spMatrix_CSR<T>(diag, mem_type, SPARSEMATRIX_FORMAT_CUSPARSE_CSR), cuda_data_type(CUDA_R_32I) {
     assert(mem_type != HOST);
     std::fprintf(stderr, "Requested template type for cusparseSpMatrix_CSR_LEGACY is not supported\n");
 }
@@ -646,7 +649,8 @@ template <typename T>
 cusparseSpMatrix_CSR_LEGACY<T>::cusparseSpMatrix_CSR_LEGACY(unsigned dim0, unsigned dim1, const std::vector<T>& valList,
                                                             const std::vector<int>& rowAccum,
                                                             const std::vector<int>& colIdx, memory_t mem_type)
-    : spMatrix_CSR<T>(dim0, dim1, valList, rowAccum, colIdx, mem_type, SPARSEMATRIX_FORMAT_CUSPARSE_CSR) {
+    : spMatrix_CSR<T>(dim0, dim1, valList, rowAccum, colIdx, mem_type, SPARSEMATRIX_FORMAT_CUSPARSE_CSR),
+      cuda_data_type(CUDA_R_32I) {
     assert(mem_type != HOST);
     std::fprintf(stderr, "Requested template type for cusparseSpMatrix_CSR_LEGACY is not supported\n");
 }
@@ -662,18 +666,24 @@ cusparseSpMatrix_CSR_LEGACY<float>::cusparseSpMatrix_CSR_LEGACY(unsigned dim0, u
 }
 template <>
 cusparseSpMatrix_CSR_LEGACY<double>::cusparseSpMatrix_CSR_LEGACY(unsigned dim0, unsigned dim1,
-                                                                const std::vector<double>& valList,
-                                                                const std::vector<int>& rowAccum,
-                                                                const std::vector<int>& colIdx, memory_t mem_type)
+                                                                 const std::vector<double>& valList,
+                                                                 const std::vector<int>& rowAccum,
+                                                                 const std::vector<int>& colIdx, memory_t mem_type)
     : spMatrix_CSR<double>(dim0, dim1, valList, rowAccum, colIdx, mem_type, SPARSEMATRIX_FORMAT_CUSPARSE_CSR),
       cuda_data_type(CUDA_R_64F) {
     assert(mem_type != HOST);
     this->createDesc();
 }
 template <typename T>
-cusparseSpMatrix_CSR_LEGACY<T>::~cusparseSpMatrix_CSR_LEGACY(void){
-    /* empty */
+cusparseSpMatrix_CSR_LEGACY<T>::~cusparseSpMatrix_CSR_LEGACY(void) {
+    if (this->_descriptor_is_set) {
+        cusparseDestroyMatDescr(*AS_TYPE(cusparseMatDescr_t*, this->_dscriptor))
+        delete this->_descriptor;
+        this->_descriptor_is_set = false;
+    }
 }
+template class cusparseSpMatrix_CSR_LEGACY<float>;
+template class cusparseSpMatrix_CSR_LEGACY<double>;
 #endif
 #endif
 
@@ -692,9 +702,11 @@ sparseMatrix<T>* get_spMat(const Tensor<T>* spMatrixTensorPtr, spMatrix_format f
             break;
 #if defined(_HAS_CUDA_)
         case SPARSEMATRIX_FORMAT_CUSPARSE_DENSE:
+            assert(mem_type != HOST);
             out = new cusparseSpMatrix_DENSE<T>(spMatrixTensorPtr, mem_type);
             break;
         case SPARSEMATRIX_FORMAT_CUSPARSE_CSR:
+            assert(mem_type != HOST);
             out = new cusparseSpMatrix_CSR<T>(spMatrixTensorPtr, mem_type);
             break;
 #endif
@@ -719,16 +731,20 @@ sparseMatrix<T>* get_spMat(unsigned dim0, unsigned dim1, const std::vector<T>& v
     sparseMatrix<T>* out = nullptr;
     switch (format) {
         case SPARSEMATRIX_FORMAT_HOST_CSR:
+            assert(mem_type == HOST);
             out = new hostSpMatrix_CSR<T>(dim0, dim1, valList, rowAccum, colIdx);
             break;
         case SPARSEMATRIX_FORMAT_HOST_DENSE:
+            assert(mem_type == HOST);
             out = new hostSpMatrix_DENSE<T>(dim0, dim1);
             break;
 #if defined(_HAS_CUDA_)
         case SPARSEMATRIX_FORMAT_CUSPARSE_DENSE:
+            assert(mem_type != HOST);
             out = new cusparseSpMatrix_CSR<T>(dim0, dim1, valList, rowAccum, colIdx, mem_type);
             break;
         case SPARSEMATRIX_FORMAT_CUSPARSE_CSR:
+			assert(mem_type != HOST);
             out = new cusparseSpMatrix_DENSE<T>(dim0, dim1, mem_type);
             break;
 #endif

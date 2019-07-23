@@ -205,7 +205,7 @@ class hostSpMatrix_CSR : public spMatrix_CSR<T> {
 };
 
 #if defined(_HAS_CUDA_)
-#if (CUDART_VERSION >= 100100)
+#if (CUDART_VERSION >= 10010)
 //  Concrete class for sparse matrix in cusparse dense format in GPU memory
 //  Wrapper for cusparseDnMatDescr_t object in CUDA version 10.1+.
 //  The interanal _data is stored in row-major (as a normal Tensor) but cusparse currently only takes column-major dense
@@ -252,7 +252,7 @@ template <typename T>
 using cusparseSpMatrix_DENSE = cusparseSpMatrix_DENSE_10010<T>;
 template <typename T>
 using cusparseSpMatrix_CSR = cusparseSpMatrix_CSR_10010<T>;
-#elif (CUDART_VERSION >= 10010)
+#elif (CUDART_VERSION < 10010)
 //  Concrete class for sparse matrix in cusparse dense format in GPU memory
 //  For dense matrix used in CUDA version below 10.1
 //  wrapper for tensor on device

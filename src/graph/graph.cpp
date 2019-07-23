@@ -95,7 +95,7 @@ spMatrix::sparseMatrix<T>* graph<T>::get_KW_transit_mat(spMatrix_format return_f
 					newA = (A == 0 ? 1 : A) / Dtilde[i];
 				}
 				else {
-					newA = (A == 0 ? (T)0 : (A + 1) / std::sqrt(Dtilde[i] * Dtilde[j]));
+					newA = (A == 0 ? (T)0 : (A + (T)1) / std::sqrt(Dtilde[i] * Dtilde[j]));
 				}
 				if (newA != 0) {
 					valV[idx] = newA;
@@ -127,7 +127,7 @@ spMatrix::sparseMatrix<T>* graph<T>::get_KW_transit_mat(spMatrix_format return_f
 					has_add_loop = true;
 				}
 				A = castedAdj->get_val_ptr()->get(begin);
-				valV[writePtr] = (A + 1) / std::sqrt(Dtilde[i] * Dtilde[thisCol]);
+				valV[writePtr] = (A + (T)1) / std::sqrt(Dtilde[i] * Dtilde[thisCol]);
 				colV[writePtr] = thisCol;
 				++writePtr;
 				begin++;

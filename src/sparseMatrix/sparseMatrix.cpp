@@ -112,11 +112,11 @@ spMatrix_CSR<T>::spMatrix_CSR(const Tensor<T>* spMatrixTensorPtr, memory_t mem_t
     std::vector<int> rowAccV, colIdxV;
     rowAccV.push_back(0);
     unsigned rowCounter = 0;
-    for (unsigned j = 0; j < this->_dim1; j++) {
-        for (unsigned i = 0; i < this->_dim0; i++) {
+    for (unsigned i = 0; i < this->_dim0; i++) {
+        for (unsigned j = 0; j < this->_dim1; j++) {
             if (spMatrixTensorPtr->get({i, j}) != T(0)) {
                 nonzeroEleV.push_back(spMatrixTensorPtr->get({i, j}));
-                colIdxV.push_back(i);
+                colIdxV.push_back(j);
                 ++rowCounter;
             }
         }
@@ -215,7 +215,7 @@ T spMatrix_CSR<T>::get(unsigned i, unsigned j) const {
     if (lastRowAcc == thisRowAcc) {  //  row i is all zero
         return (T) 0;
     }
-    //  nonzero idx of row i in in _colIdx[lastRowAcc:thisRowAcc)
+    //  nonzero idx of row i is in _colIdx[lastRowAcc:thisRowAcc)
     //  use lastRowAcc as an idx
     //  todo: change to use binary search?
     while (lastRowAcc != thisRowAcc && (unsigned) _colIdx->get(lastRowAcc) < j) {

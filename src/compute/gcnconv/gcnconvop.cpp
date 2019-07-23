@@ -52,7 +52,7 @@ void GCNConvOp<double>::init_aTgrad_cusparse_settings(cusparseSpMMAlg_t alg) {
 template <typename T>
 void GCNConvOp<T>::init_eval(void) {
     this->output_tensor = new Tensor<T>(this->output_shape, this->mem_type);
-    this->abc_tensor_slice = new Tensor<T>({n_vert_in, n_channel_in}, this->mem_type);
+    this->abc_tensor_slice = new Tensor<T>({n_vert_out, n_channel_out}, this->mem_type);
     switch (a->get_data_format()) {
         case SPARSEMATRIX_FORMAT_HOST_CSR:
             dense_format = SPARSEMATRIX_FORMAT_HOST_DENSE;
@@ -213,10 +213,14 @@ Tensor<T>* GCNConvOp<T>::_eval(bool recompute) {
     c_tensor = c->eval(recompute);
     for (unsigned sample_idx = 0; sample_idx < n_samples; ++sample_idx) {  //  for each sample
         b_tensor_slice->copy_from(*b_tensor, sample_idx * input_sample_size, input_sample_size);
-        // b_wrapper->set_mat(b_tensor_slice);
+        // math::spgematmul(const_one, false, a, false, b_wrapper, const_zero, ab_wrapper, ab_settings, false);
+        // math::matmul(const_one, false, ab_tensor_slice, false, c_tensor, const_zero, abc_tensor_slice);
+        // evil hack to avoid transposing every round of evaluation
         math::spgematmul(const_one, false, a, false, b_wrapper, const_zero, ab_wrapper, ab_settings, true);
-        // ab_wrapper->get_uncompressed_mat(ab_tensor_slice);
+        ab_tensor_slice->reshape({n_channel_in, n_vert_out});
         math::matmul(const_one, true, ab_tensor_slice, false, c_tensor, const_zero, abc_tensor_slice);
+        ab_tensor_slice->reshape({n_vert_out, n_channel_in});
+        // evil hack ends here
         this->output_tensor->copy_from(*this->abc_tensor_slice, 0, output_sample_size, sample_idx * output_sample_size);
     }
     return this->output_tensor;
@@ -246,9 +250,14 @@ Tensor<T>* GCNConvOp<T>::_grad(Operation<T>* consumer, Operation<T>* var, Tensor
         }
         for (unsigned sample_idx = 0; sample_idx < n_samples; ++sample_idx) {
             this->grad_tensor_slice->copy_from(*grad, sample_idx * output_sample_size, output_sample_size);
-            math::spgematmul(const_one, true, a, false, this->grad_wrapper, const_zero, aTgrad_wrapper, aTgrad_settings,
-                             true);
+            /*  math::spgematmul(const_one, true, a, false, this->grad_wrapper, const_zero, aTgrad_wrapper, aTgrad_settings, false);    
+             *  math::matmul(const_one, true, aTgrad_tensor_slice, true, c_tensor, const_zero, this->aTgradcT_tensor_slice);
+             **///  evil hack to avoid transposing every round of evaluation
+            math::spgematmul(const_one, true, a, false, this->grad_wrapper, const_zero, aTgrad_wrapper, aTgrad_settings, true);
+            aTgrad_tensor_slice->reshape({n_channel_out, n_vert_in});
             math::matmul(const_one, true, aTgrad_tensor_slice, true, c_tensor, const_zero, this->aTgradcT_tensor_slice);
+            aTgrad_tensor_slice->reshape({n_vert_in, n_channel_out});
+            //  evil hack ends here
             out->copy_from(*this->aTgradcT_tensor_slice, 0, input_sample_size, sample_idx * input_sample_size);
         }
     } else {  // if (var == c)
@@ -262,10 +271,15 @@ Tensor<T>* GCNConvOp<T>::_grad(Operation<T>* consumer, Operation<T>* var, Tensor
         }
         for (unsigned sample_idx = 0; sample_idx < n_samples; ++sample_idx) {
             this->b_tensor_slice->copy_from(*b_tensor, sample_idx * input_sample_size, input_sample_size);
-            math::spgematmul(const_one, false, a, false, b_wrapper, const_zero, ab_wrapper, ab_settings, true);
             this->grad_tensor_slice->copy_from(*grad, sample_idx * output_sample_size, output_sample_size);
-            math::matmul(const_one, false, ab_tensor_slice, false, grad_tensor_slice,
-                         (sample_idx == 0) ? const_zero : const_one, out);  //  reset out / accumulate
+            /*  math::spgematmul(const_one, false, a, false, b_wrapper, const_zero, ab_wrapper, ab_settings, false);
+             *  math::matmul(const_one, true, ab_tensor_slice, false, grad_tensor_slice, (sample_idx == 0) ? const_zero : const_one, out);  //  reset out / accumulate
+             **///  evil hack to avoid transposing every round of evaluation
+            math::spgematmul(const_one, false, a, false, b_wrapper, const_zero, ab_wrapper, ab_settings, true);
+            ab_tensor_slice->reshape({n_channel_in, n_vert_out});
+            math::matmul(const_one, false, ab_tensor_slice, false, grad_tensor_slice, (sample_idx == 0) ? const_zero : const_one, out);
+            ab_tensor_slice->reshape({n_vert_out, n_channel_in});
+            //  evil hack ends here
         }
     }
     return out;

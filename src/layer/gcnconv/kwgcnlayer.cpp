@@ -32,14 +32,14 @@ std::vector<op::Operation<T>*> KWGCNLayer<T>::get_weights(void) {
 }
 
 template <typename T>
-KWGCNLayer<T>* kipfgcn(op::Operation<T>* input, graph<T>* struct_graph, unsigned output_channel, bool copy, bool needs_grad) {
+KWGCNLayer<T>* kwgcn(op::Operation<T>* input, graph<T>* struct_graph, unsigned output_channel, bool copy, bool needs_grad) {
     return new KWGCNLayer<T>(input, struct_graph, output_channel, copy, needs_grad);
 }
-template KWGCNLayer<int>* kipfgcn(op::Operation<int>* input, graph<int>* struct_graph, unsigned output_channel,
+template KWGCNLayer<int>* kwgcn(op::Operation<int>* input, graph<int>* struct_graph, unsigned output_channel,
                                   bool, bool needs_grad);
-template KWGCNLayer<float>* kipfgcn(op::Operation<float>* input, graph<float>* struct_graph, unsigned output_channel,
+template KWGCNLayer<float>* kwgcn(op::Operation<float>* input, graph<float>* struct_graph, unsigned output_channel,
                                     bool copy, bool needs_grad);
-template KWGCNLayer<double>* kipfgcn(op::Operation<double>* input, graph<double>* struct_graph, unsigned output_channel,
+template KWGCNLayer<double>* kwgcn(op::Operation<double>* input, graph<double>* struct_graph, unsigned output_channel,
                                      bool copy, bool needs_grad);
 
 }  //  namespace layer

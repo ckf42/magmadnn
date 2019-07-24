@@ -38,7 +38,7 @@ class KWGCNLayer : public Layer<T> {
 };
 
 template <typename T>
-KWGCNLayer<T>* kipfgcn(op::Operation<T>* input, graph<T>* struct_graph, unsigned output_channel, bool copy = true,
+KWGCNLayer<T>* kwgcn(op::Operation<T>* input, graph<T>* struct_graph, unsigned output_channel, bool copy = true,
                        bool needs_grad = true);
 
 }  //  namespace layer

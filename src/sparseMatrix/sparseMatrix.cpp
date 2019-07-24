@@ -12,14 +12,14 @@ sparseMatrix<T>::sparseMatrix(void) : _descriptor(nullptr), _descriptor_is_set(f
 #endif
 template <typename T>
 sparseMatrix<T>::sparseMatrix(const Tensor<T>* spMatrixTensorPtr, memory_t mem_type, spMatrix_format format)
-    : _format(format), _descriptor(nullptr), _descriptor_is_set(false), _mem_type(mem_type) {
+    : _format(format), _descriptor(nullptr), _descriptor_is_set(false), _mem_type(mem_type), _nnz(0) {
     assert(T_IS_MATRIX(spMatrixTensorPtr));
     _dim0 = spMatrixTensorPtr->get_shape(0);
     _dim1 = spMatrixTensorPtr->get_shape(1);
 }
 template <typename T>
 sparseMatrix<T>::sparseMatrix(unsigned dim0, unsigned dim1, memory_t mem_type, spMatrix_format format)
-    : _format(format), _dim0(dim0), _dim1(dim1), _descriptor(nullptr), _descriptor_is_set(false), _mem_type(mem_type) {
+    : _format(format), _dim0(dim0), _dim1(dim1), _descriptor(nullptr), _descriptor_is_set(false), _mem_type(mem_type), _nnz(0) {
     /* empty */
 }
 template <typename T>
@@ -55,6 +55,13 @@ spMatrix_DENSE<T>::spMatrix_DENSE(const Tensor<T>* spMatrixTensorPtr, memory_t m
     if (copy) {
         _data->copy_from(*spMatrixTensorPtr);
     }
+    for (unsigned i = 0; i < this->_dim0;++i){
+        for (unsigned j = 0; j < this->_dim1;++j){
+            if (_data->get({i, j}) != static_cast<T>(0)){
+                ++this->_nnz;
+            }
+        } 
+    }
 }
 template <typename T>
 spMatrix_DENSE<T>::spMatrix_DENSE(const std::vector<T>& diag, memory_t mem_type, spMatrix_format format)
@@ -67,6 +74,7 @@ spMatrix_DENSE<T>::spMatrix_DENSE(const std::vector<T>& diag, memory_t mem_type,
             _data->set({idx, idx}, diag[idx]);
         }
     }
+    this->_nnz = this->_dim0;
 }
 template <typename T>
 spMatrix_DENSE<T>::spMatrix_DENSE(unsigned dim0, unsigned dim1, memory_t mem_type, spMatrix_format format)
@@ -100,14 +108,14 @@ T spMatrix_DENSE<T>::rowSum(unsigned rowIdx) const {
 #if defined(DEBUG)
 template <typename T>
 spMatrix_CSR<T>::spMatrix_CSR(void)
-    : sparseMatrix(void), _nnz(0), _valList(nullptr), _rowCount(nullptr), _colIdx(nullptr) {
+    : sparseMatrix(void), _valList(nullptr), _rowCount(nullptr), _colIdx(nullptr) {
     fprintf(stderr, "Constructor for spMatrix_CSR called without parameters.\n");
 }
 #endif
 template <typename T>
 spMatrix_CSR<T>::spMatrix_CSR(const Tensor<T>* spMatrixTensorPtr, memory_t mem_type, spMatrix_format format)
     : sparseMatrix<T>(spMatrixTensorPtr, mem_type, format) {
-    _nnz = 0;
+    this->_nnz = 0;
     std::vector<T> nonzeroEleV;
     std::vector<int> rowAccV, colIdxV;
     rowAccV.push_back(0);
@@ -122,7 +130,7 @@ spMatrix_CSR<T>::spMatrix_CSR(const Tensor<T>* spMatrixTensorPtr, memory_t mem_t
         }
         rowAccV.push_back(rowCounter);
     }
-    _nnz = rowCounter;
+    this->_nnz = rowCounter;
     _valList = new Tensor<T>({unsigned(1), this->_nnz}, {NONE, {}}, mem_type);
     _rowCount = new Tensor<int>({unsigned(1), this->_dim0 + 1}, {NONE, {}}, mem_type);
     _colIdx = new Tensor<int>({unsigned(1), this->_nnz}, {NONE, {}}, mem_type);
@@ -138,21 +146,21 @@ spMatrix_CSR<T>::spMatrix_CSR(const Tensor<T>* spMatrixTensorPtr, memory_t mem_t
 template <typename T>
 spMatrix_CSR<T>::spMatrix_CSR(const std::vector<T>& diag, memory_t mem_type, spMatrix_format format)
     : sparseMatrix<T>(diag.size(), diag.size(), mem_type, format) {
-    _nnz = 0;
+    this->_nnz = 0;
     std::vector<T> valV;
     std::vector<int> rowV, colV;
     rowV.push_back(0);
     for (unsigned idx = 0; idx < this->_dim0; ++idx) {
         if (diag[idx] != (T) 0) {
-            _nnz++;
+            this->_nnz++;
             valV.push_back(diag[idx]);
             colV.push_back(idx);
         }
-        rowV.push_back(_nnz);
+        rowV.push_back(this->_nnz);
     }
-    _valList = new Tensor<T>({(unsigned) 1, _nnz}, {NONE, {}}, mem_type);
+    _valList = new Tensor<T>({(unsigned) 1, this->_nnz}, {NONE, {}}, mem_type);
     _rowCount = new Tensor<int>({(unsigned) 1, this->_dim0 + 1}, {NONE, {}}, mem_type);
-    _colIdx = new Tensor<int>({(unsigned) 1, _nnz}, {NONE, {}}, mem_type);
+    _colIdx = new Tensor<int>({(unsigned) 1, this->_nnz}, {NONE, {}}, mem_type);
     for (unsigned idx = 0; idx < this->_nnz; ++idx) {
         _valList->set(idx, valV[idx]);
         _colIdx->set(idx, colV[idx]);
@@ -165,13 +173,14 @@ template <typename T>
 spMatrix_CSR<T>::spMatrix_CSR(unsigned dim0, unsigned dim1, const std::vector<T>& valList,
                               const std::vector<int>& rowAccum, const std::vector<int>& colIdx, memory_t mem_type,
                               spMatrix_format format)
-    : sparseMatrix<T>(dim0, dim1, mem_type, format), _nnz(valList.size()) {
+    : sparseMatrix<T>(dim0, dim1, mem_type, format) {
+    this->_nnz = valList.size();
     assert(this->_nnz == colIdx.size());
     assert(dim0 + 1 == rowAccum.size());
-    _valList = new Tensor<T>({(unsigned) 1, _nnz}, {NONE, {}}, mem_type);
+    _valList = new Tensor<T>({(unsigned) 1, this->_nnz}, {NONE, {}}, mem_type);
     _rowCount = new Tensor<int>({(unsigned) 1, dim0 + 1}, {NONE, {}}, mem_type);
-    _colIdx = new Tensor<int>({(unsigned) 1, _nnz}, {NONE, {}}, mem_type);
-    for (unsigned idx = 0; idx < _nnz; ++idx) {
+    _colIdx = new Tensor<int>({(unsigned) 1, this->_nnz}, {NONE, {}}, mem_type);
+    for (unsigned idx = 0; idx < this->_nnz; ++idx) {
         _valList->set(idx, valList[idx]);
         _colIdx->set(idx, colIdx[idx]);
     }

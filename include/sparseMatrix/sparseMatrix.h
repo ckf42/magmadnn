@@ -32,6 +32,7 @@ class sparseMatrix {
     void* _descriptor;        //  descriptor for the sparse matrix, need to cast to corresponding class when needed
     bool _descriptor_is_set;  //  whether the _descriptor is pointing to a valid object
     memory_t _mem_type;       //  where the actural matrix data are stored
+    unsigned _nnz;           //  number of nonzero elements
 
    public:
 #if defined(DEBUG)
@@ -72,6 +73,13 @@ class sparseMatrix {
     virtual void set(unsigned i, unsigned j, T val) = 0;
     //  returns the sum of elements in row rowIdx
     virtual T rowSum(unsigned rowIdx) const;
+    //  returns the number of nonzero elements
+    inline virtual unsigned get_nnz(void) const { return _nnz; }
+    //  returns the sparsity of the matrix
+    inline virtual float get_sparsity(void) const {
+        assert(_dim0 * _dim1 != 0);
+        return 1 - static_cast<float>(_nnz) / _dim0 / _dim1;
+    };
 };
 
 //  abstract base class for sparse matrix in dense format
@@ -123,7 +131,10 @@ class spMatrix_DENSE : public sparseMatrix<T> {
     //  returns a vector storing all the values at row rowIdx
     virtual std::vector<T> getRowSlice(unsigned rowIdx) const;
     //  changes the value at location (i, j) to val
-    inline virtual void set(unsigned i, unsigned j, T val) { _data->set({i, j}, val); }
+    inline virtual void set(unsigned i, unsigned j, T val) {
+        this->_nnz += (val != 0 ? 1 : 0) - (_data->get({i, j}) != 0 ? 1 : 0);
+        _data->set({i, j}, val);
+        }
     //  returns the sum of elements in row rowIdx
     virtual T rowSum(unsigned rowIdx) const;
 };
@@ -136,7 +147,7 @@ class spMatrix_CSR : public sparseMatrix<T> {
     spMatrix_CSR<T>& operator=(const spMatrix_CSR<T>& that) = delete;  //  no assignment for abstract class
 
    protected:
-    unsigned _nnz;           //  number of nonzero elements
+    // unsigned _nnz;           //  number of nonzero elements
     Tensor<T>* _valList;     //  nonzero elements in row order, size 1 * _nnz
     Tensor<int>* _rowCount;  //  number of nonzero elements appear in row[0:idx), zero-based, size 1 * (row + 1)
     Tensor<int>* _colIdx;    //  column indices of the nonzero elements in val, size 1 * _nnz
@@ -150,8 +161,8 @@ class spMatrix_CSR : public sparseMatrix<T> {
     spMatrix_CSR(unsigned dim0, unsigned dim1, const std::vector<T>& valList, const std::vector<int>& rowAccum,
                  const std::vector<int>& colIdx, memory_t mem_type, spMatrix_format format);
     virtual ~spMatrix_CSR(void) = 0;
-    //  returns the number of nonzero elements
-    inline unsigned get_nnz(void) { return _nnz; }
+    // // returns the number of nonzero elements
+    // inline unsigned get_nnz(void) { return _nnz; }
     //  returns a const pointer to valList
     inline Tensor<T>* get_val_ptr(void) const { return _valList; }
     //  returns a const pointer to rowCount

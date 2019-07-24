@@ -48,6 +48,7 @@ class graph {
     //  implemented
     //  todo: rewrite with proper math routines
     spMatrix::sparseMatrix<T>* get_KW_transit_mat(spMatrix_format return_format, memory_t return_mem_type = HOST) const;
+    inline float get_sparsity(void) const { return adjMatrix->get_sparsity(); }
 };
 
 }  // namespace magmadnn

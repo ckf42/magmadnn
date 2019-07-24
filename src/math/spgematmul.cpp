@@ -18,7 +18,7 @@ void spgematmul(T alpha, bool trans_A, spMatrix::sparseMatrix<T>* A, bool trans_
     if (A->get_data_format() == SPARSEMATRIX_FORMAT_HOST_CSR) {
         std::fprintf(stderr, "Spgemm for host_csr is not yet implemented\n");
     } else if (A->get_data_format() == SPARSEMATRIX_FORMAT_HOST_DENSE) {
-        std::fprintf(stderr, "First matrix A in spgematmul must be of sparse type\n");
+        std::fprintf(stderr, "For matrix of dense format please use matmul\n");
     }
 #if defined(_HAS_CUDA_)
     else if (A->get_data_format() == SPARSEMATRIX_FORMAT_CUSPARSE_CSR) {
@@ -35,7 +35,7 @@ void spgematmul(T alpha, bool trans_A, spMatrix::sparseMatrix<T>* A, bool trans_
                                    AS_TYPE(spMatrix::cusparseSpMatrix_DENSE<T>*, C), col_major_output);
 #endif
     } else if (A->get_data_format() == SPARSEMATRIX_FORMAT_CUSPARSE_DENSE) {
-        std::fprintf(stderr, "First matrix A in spgematmul must be of sparse type\n");
+        std::fprintf(stderr, "For matrix of dense format please use matmul\n");
     }
 #endif
     else {

@@ -6,6 +6,7 @@
 #include "compute/variable.h"
 #include "sparseMatrix/sparseMatrix.h"
 #include "utilities_internal.h"
+#include "math/matmul.h"
 
 #if defined(_HAS_CUDA_)
 #include "cusparse.h"

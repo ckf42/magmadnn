@@ -27,23 +27,28 @@ std::vector<op::Operation<T>*> ActivationLayer<T>::get_weights() {
 
 template <typename T>
 void ActivationLayer<T>::init() {
-    this->name = "Activation";
+    this->name = "Activation / ";
 
     switch (this->activation_func) {
         case SIGMOID:
             this->output = op::sigmoid(this->input);
+            this->name += "Sigmoid";
             break;
         case TANH:
             this->output = op::tanh(this->input);
+            this->name += "Tanh";
             break;
         case RELU:
             this->output = op::relu(this->input);
+            this->name += "ReLU";
             break;
         case SOFTMAX:
             this->output = op::softmax(this->input);
+            this->name += "Softmax";
             break;
         default:
             this->output = op::sigmoid(this->input);
+            this->name += "Sigmoid";
             break;
     }
 }

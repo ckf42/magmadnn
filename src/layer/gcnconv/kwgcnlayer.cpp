@@ -13,9 +13,9 @@ KWGCNLayer<T>::KWGCNLayer(op::Operation<T>* input, graph<T>* struct_graph, unsig
       needs_grad(needs_grad) {
     assert(this->get_input_shape().size() == 3);
     assert(this->struct_graph->get_order() == this->get_input_shape(1));
-    this->name = "KipfGCN";
-    T bound = static_cast<T>(sqrt(2.0 / this->input->get_output_shape(1)));
-    this->weights_tensor = new Tensor<T>({this->input->get_output_shape(1), this->output_channel},
+    this->name = "KWGCNLayer / " + std::to_string(output_channel);
+    T bound = static_cast<T>(sqrt(2.0 / this->input->get_output_shape(2)));
+    this->weights_tensor = new Tensor<T>({this->input->get_output_shape(2), this->output_channel},
                                          {UNIFORM, {-bound, bound}}, this->input->get_memory_type());
     this->weights = op::var("__" + this->name + "_layer_weights", this->weights_tensor);
     this->transition_matrix =

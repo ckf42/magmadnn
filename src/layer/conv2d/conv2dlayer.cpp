@@ -44,6 +44,9 @@ Conv2dLayer<T>::Conv2dLayer(op::Operation<T>* input, const std::vector<unsigned 
     }
 
     init(filter_shape);
+
+    this->name += " / " + std::to_string(out_channels) + " (" + std::to_string(filter_tensor->get_shape(2)) + ", " +
+                  std::to_string(filter_tensor->get_shape(3)) + ")";
 }
 
 template <typename T>

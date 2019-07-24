@@ -29,7 +29,7 @@ template <typename T>
 void DropoutLayer<T>::init() {
     this->output = op::dropout(this->input, dropout_rate, seed);
 
-    this->name = "DropoutLayer";
+    this->name = "DropoutLayer / " + std::to_string(dropout_rate);
 }
 template class DropoutLayer<int>;
 template class DropoutLayer<float>;

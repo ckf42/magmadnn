@@ -25,7 +25,12 @@ template <typename T>
 void InputLayer<T>::init() {
     this->output = this->input;
 
-    this->name = "InputLayer";
+    this->name = "InputLayer / (";
+    for (unsigned ndim = 0; ndim < this->input->get_output_shape().size(); ++ndim){
+        this->name += std::to_string(this->input->get_output_shape(ndim)) +
+                      (ndim != this->input->get_output_shape().size() - 1 ? ", " : "");
+    }
+    this->name += ")";
 }
 template class InputLayer<int>;
 template class InputLayer<float>;

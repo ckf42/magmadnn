@@ -54,7 +54,18 @@ void PoolingLayer<T>::init() {
 
     this->output = op::pooling(this->input, filter_h, filter_w, pad_h, pad_w, stride_h, stride_w, mode, propagate_nan);
 
-    this->name = "Pooling";
+    this->name = "Pooling / ";
+    switch (mode){
+        case AVERAGE_POOL:
+            this->name += "ave pooling";
+            break;
+        case MAX_POOL:
+            this->name += "max pooling";
+            break;
+        default:
+            break;
+    }
+    this->name += "(" + std::to_string(filter_h) + ", " + std::to_string(filter_w) + ")";
 }
 template class PoolingLayer<int>;
 template class PoolingLayer<float>;

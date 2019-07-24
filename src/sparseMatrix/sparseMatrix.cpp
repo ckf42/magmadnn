@@ -730,6 +730,8 @@ sparseMatrix<T>* get_spMat(unsigned dim0, unsigned dim1, const std::vector<T>& v
     assert(valList.size() == colIdx.size());
     assert(dim1 + 1 == rowAccum.size());
     sparseMatrix<T>* out = nullptr;
+    unsigned nnzCount = 0;
+    int count0, count1 = 0, toFill;
     switch (format) {
         case SPARSEMATRIX_FORMAT_HOST_CSR:
             assert(mem_type == HOST);
@@ -738,15 +740,37 @@ sparseMatrix<T>* get_spMat(unsigned dim0, unsigned dim1, const std::vector<T>& v
         case SPARSEMATRIX_FORMAT_HOST_DENSE:
             assert(mem_type == HOST);
             out = new hostSpMatrix_DENSE<T>(dim0, dim1);
+            for (unsigned rowPtr = 0; rowPtr < dim0; ++rowPtr){
+                count0 = count1;
+                count1=rowAccum[rowPtr+1];
+                toFill = count1 - count0;
+                for (unsigned colPtr = 0; colPtr < dim1;++colPtr){
+                    if (toFill>0 && colPtr == (unsigned)colIdx[nnzCount]){
+                        out->set(rowPtr, colPtr, valList[nnzCount++]);
+                        toFill--;
+                    }
+                } 
+            }
             break;
 #if defined(_HAS_CUDA_)
         case SPARSEMATRIX_FORMAT_CUSPARSE_DENSE:
             assert(mem_type != HOST);
-            out = new cusparseSpMatrix_CSR<T>(dim0, dim1, valList, rowAccum, colIdx, mem_type);
+            out = new cusparseSpMatrix_DENSE<T>(dim0, dim1, mem_type);
+            for (unsigned rowPtr = 0; rowPtr < dim0; ++rowPtr){
+                count0 = count1;
+                count1=rowAccum[rowPtr+1];
+                toFill = count1 - count0;
+                for (unsigned colPtr = 0; colPtr < dim1;++colPtr){
+                    if (toFill>0 && colPtr == (unsigned)colIdx[nnzCount]){
+                        out->set(rowPtr, colPtr, valList[nnzCount++]);
+                        toFill--;
+                    }
+                } 
+            }
             break;
         case SPARSEMATRIX_FORMAT_CUSPARSE_CSR:
 			assert(mem_type != HOST);
-            out = new cusparseSpMatrix_DENSE<T>(dim0, dim1, mem_type);
+            out = new cusparseSpMatrix_CSR<T>(dim0, dim1, valList, rowAccum, colIdx, mem_type);
             break;
 #endif
         default:

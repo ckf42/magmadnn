@@ -26,8 +26,12 @@ OutputLayer<T>::~OutputLayer() {}
 
 template <typename T>
 void OutputLayer<T>::init() {
-    this->name = "OutputLayer";
-
+    this->name = "OutputLayer / (";
+    for (unsigned ndim = 0; ndim < this->input->get_output_shape().size(); ++ndim){
+        this->name +=
+            std::to_string(this->input->get_output_shape(ndim)) + (ndim != this->input->get_output_shape().size() - 1 ? ", " : "");
+    }
+    this->name += ")";
     this->output = this->input;
 }
 template class OutputLayer<int>;

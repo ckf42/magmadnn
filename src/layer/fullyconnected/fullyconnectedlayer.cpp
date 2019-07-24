@@ -34,7 +34,7 @@ std::vector<op::Operation<T>*> FullyConnectedLayer<T>::get_weights() {
 
 template <typename T>
 void FullyConnectedLayer<T>::init() {
-    this->name = "FullyConnected";
+    this->name = "FullyConnected / " + std::to_string(hidden_units) + (use_bias ? " / with bias" : "");
 
     /* input is   n_batches x n_classes */
 

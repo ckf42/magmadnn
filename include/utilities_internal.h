@@ -48,14 +48,6 @@ inline void curandAssert(curandStatus_t code, const char *file, int line, bool a
     }
 }
 
-#define cublasErrchk(ans) \
-    { cublasAssert((ans), __FILE__, __LINE__); }
-inline void cublasAssert(cublasStatus_t code, const char *file, int line, bool abort = true) {
-    if (code != CUBLAS_STATUS_SUCCESS) {
-        fprintf(stderr, "CuBlasAssert: %d %s %d\n", code, file, line);
-    }
-}
-
 #define cusparseErrchk(ans) \
     { cusparseAssert((ans), __FILE__, __LINE__); }
 inline void cusparseAssert(cusparseStatus_t code, const char *file, int line, bool abort = true) {

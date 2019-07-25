@@ -3,6 +3,19 @@
 namespace magmadnn {
 namespace op {
 
+template <typename T>
+void GCNConvOp<T>::cublasStridedBatchedWrapper(bool trans_A, bool trans_B, int m, int n, int k, T alpha, T* A, T* B,
+                                               T beta, T* C, long long strideA, long long strideB, long long strideC) {
+    std::fprintf(stderr, "Data type not supported\n");
+}
+template <>
+void GCNConvOp<float>::cublasStridedBatchedWrapper(bool trans_A, bool trans_B, int m, int n, int k, float alpha,
+                                                   float* A, float* B, float beta, float* C, long long strideA,
+                                                   long long strideB, long long strideC) {
+    cublasErrchk(cublasSgemmStridedBatched(::magmadnn::internal::MAGMADNN_SETTINGS->cublas_handle, \))
+}
+
+
 #if defined(_HAS_CUDA_)
 #if (CUDART_VERSION >= 100100)
 template <typename T>
@@ -50,7 +63,7 @@ void GCNConvOp<double>::init_aTgrad_cusparse_settings(cusparseSpMMAlg_t alg) {
 #endif
 
 template <typename T>
-void GCNConvOp<T>::init_eval(void) {
+void GCNConvOp<T>::init_eval_as_sparse(void) {
     this->output_tensor = new Tensor<T>(this->output_shape, this->mem_type);
     this->abc_tensor_slice = new Tensor<T>({n_vert_out, n_channel_out}, this->mem_type);
     switch (a->get_data_format()) {
@@ -75,6 +88,12 @@ void GCNConvOp<T>::init_eval(void) {
     }
     this->b_tensor_slice = this->b_wrapper->get_data_ptr();
     this->ab_tensor_slice = this->ab_wrapper->get_data_ptr();
+}
+
+template <typename T>
+void GCNConvOp<T>::init_eval_as_dense(void) {
+    this->output_tensor = new Tensor<T>(this->output_shape, this->mem_type);
+    this->ab = new Tensor<T>({n_samples, n_vert_out, n_channel_in}, this->mem_type);
 }
 
 template <typename T>
@@ -143,12 +162,13 @@ GCNConvOp<T>::GCNConvOp(spMatrix::sparseMatrix<T>* a, Operation<T>* b, Operation
       aTgrad_settings(nullptr) {
     assert(a->get_memory_type() == b->get_memory_type());
     assert(OP_IS_SAME_MEMORY_TYPE(b, c));
-    assert(dynamic_cast<spMatrix::spMatrix_DENSE<T>*>(a) == nullptr &&
-           "Sparse matrix for GCNConvOp must not be of dense format");  //  todo: slow to dynamic_cast, better method?
+    //assert(dynamic_cast<spMatrix::spMatrix_DENSE<T>*>(a) == nullptr &&
+    //       "Sparse matrix for GCNConvOp must not be of dense format");  //  todo: slow to dynamic_cast, better method?
     assert(OP_IS_N_DIMENSIONAL(b, 3));
     assert(OP_IS_MATRIX(c));
     assert(a->get_shape(1) == b->get_output_shape(1));
     assert(b->get_output_shape(2) == c->get_output_shape(0));
+    as_sparse(dynamic_cast<spMatrix::spMatrix_DENSE<T>*>(a) == nullptr);  //  todo: slow to dynamic_cast, better method?
     n_samples = b->get_output_shape(0);
     n_vert_in = a->get_shape(1);
     n_vert_out = a->get_shape(0);
@@ -206,23 +226,31 @@ GCNConvOp<T>::~GCNConvOp(void) {
 
 template <typename T>
 Tensor<T>* GCNConvOp<T>::_eval(bool recompute) {
-    if (b_tensor_slice == nullptr) {
-        init_eval();
-    }
     b_tensor = b->eval(recompute);
     c_tensor = c->eval(recompute);
-    for (unsigned sample_idx = 0; sample_idx < n_samples; ++sample_idx) {  //  for each sample
-        b_tensor_slice->copy_from(*b_tensor, sample_idx * input_sample_size, input_sample_size);
-        // math::spgematmul(const_one, false, a, false, b_wrapper, const_zero, ab_wrapper, ab_settings, false);
-        // math::matmul(const_one, false, ab_tensor_slice, false, c_tensor, const_zero, abc_tensor_slice);
-        // evil hack to avoid transposing every round of evaluation
-        math::spgematmul(const_one, false, a, false, b_wrapper, const_zero, ab_wrapper, ab_settings, true);
-        ab_tensor_slice->reshape({n_channel_in, n_vert_out});
-        math::matmul(const_one, true, ab_tensor_slice, false, c_tensor, const_zero, abc_tensor_slice);
-        ab_tensor_slice->reshape({n_vert_out, n_channel_in});
-        // evil hack ends here
-        this->output_tensor->copy_from(*this->abc_tensor_slice, 0, output_sample_size, sample_idx * output_sample_size);
-    }
+    if (this->as_sparse) {
+        if (b_tensor_slice == nullptr) {
+            init_eval_as_sparse();
+        }
+        for (unsigned sample_idx = 0; sample_idx < n_samples; ++sample_idx) {  //  for each sample
+            b_tensor_slice->copy_from(*b_tensor, sample_idx * input_sample_size, input_sample_size);
+            // math::spgematmul(const_one, false, a, false, b_wrapper, const_zero, ab_wrapper, ab_settings, false);
+            // math::matmul(const_one, false, ab_tensor_slice, false, c_tensor, const_zero, abc_tensor_slice);
+            // evil hack to avoid transposing every round of evaluation
+            math::spgematmul(const_one, false, a, false, b_wrapper, const_zero, ab_wrapper, ab_settings, true);
+            ab_tensor_slice->reshape({n_channel_in, n_vert_out});
+            math::matmul(const_one, true, ab_tensor_slice, false, c_tensor, const_zero, abc_tensor_slice);
+            ab_tensor_slice->reshape({n_vert_out, n_channel_in});
+            // evil hack ends here
+            this->output_tensor->copy_from(*this->abc_tensor_slice, 0, output_sample_size,
+                                           sample_idx * output_sample_size);
+        }
+    } else {
+        init_eval_as_dense();
+		cublas\
+
+
+    }    
     return this->output_tensor;
 }
 

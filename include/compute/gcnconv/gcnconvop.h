@@ -4,6 +4,7 @@
 #include "compute/gcnconv/gcnconvop_internal.h"
 #include "compute/operation.h"
 #include "compute/tensor_operations.h"
+#include "cublas.h"
 #include "math/spgematmul.h"
 #include "sparseMatrix/sparseMatrix.h"
 #include "tensor/tensor.h"
@@ -33,7 +34,10 @@ class GCNConvOp : public Operation<T> {
    private:
     const T const_one = (T) 1;
     const T const_zero = (T) 0;
-    inline void init_eval(void);
+    static void cublasStridedBatchedWrapper(bool trans_A, bool trans_B, int m, int n, int k, T alpha, T* A, T* B, T beta, T* C,
+                                            long long strideA, long long strideB, long long strideC);
+    inline void init_eval_as_sparse(void);
+    inline void init_eval_as_dense(void);
     inline void init_grad(void);
     inline void init_aTgrad(void);
 #if defined(_HAS_CUDA_)
@@ -44,6 +48,7 @@ class GCNConvOp : public Operation<T> {
 #endif
 
    protected:
+    bool as_sparse;  //  whether to call spgematmul (true) or norm gemm (false)
     unsigned n_samples;
     unsigned n_vert_in, n_vert_out;
     unsigned n_channel_in, n_channel_out;
@@ -66,6 +71,9 @@ class GCNConvOp : public Operation<T> {
     Tensor<T>* aTgrad_tensor_slice;               //  stores the results of spgemm(a^T, grad_tensor_slice)
     spMatrix::spMatrix_DENSE<T>* aTgrad_wrapper;  //  sparse matrix object connected to aTgrad_tensor_slice
     Tensor<T>* aTgradcT_tensor_slice;             //  stores the result of matmul(aTgrad_tensor_slice, c_tensor)
+    //  intermediate result for calling cublas
+    Tensor<T>* ab;
+    Tensor<T>* aTgrad;
 
     spMatrix_format dense_format;  //  format to store dense matrices for spgemm
     void* ab_settings;

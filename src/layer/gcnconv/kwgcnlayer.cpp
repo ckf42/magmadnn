@@ -20,7 +20,25 @@ KWGCNLayer<T>::KWGCNLayer(op::Operation<T>* input, graph<T>* struct_graph, unsig
     this->weights = op::var("__" + this->name + "_layer_weights", this->weights_tensor);
     this->transition_matrix =
         this->struct_graph->get_KW_transit_mat(this->struct_graph->get_adj_format(), this->struct_graph->get_data_type());
-    this->output = op::gcnconv(this->transition_matrix, this->input, this->weights);
+    bool is_sparse = true;
+    switch (this->struct_graph->get_adj_format()) {
+        case SPARSEMATRIX_FORMAT_HOST_CSR:
+#if defined(_HAS_CUDA_)
+    case SPARSEMATRIX_FORMAT_CUSPARSE_CSR:
+#endif
+        is_sparse = true;
+        break;
+    case SPARSEMATRIX_FORMAT_HOST_DENSE:
+#if defined(_HAS_CUDA_)
+    case SPARSEMATRIX_FORMAT_CUSPARSE_DENSE:
+#endif
+        is_sparse = false;
+        break;
+    default:
+        std::fprintf(stderr, "Input graph format for KWGCN layer is not recongnized.\n");
+        break;
+    }
+    this->output = op::gcnconv(this->transition_matrix, this->input, this->weights, is_sparse);
 }
 template <typename T>
 KWGCNLayer<T>::~KWGCNLayer(void) {

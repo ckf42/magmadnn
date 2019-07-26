@@ -98,7 +98,7 @@ void GCNConvOp<T>::init_eval_as_sparse(void) {
             break;
 #endif
         default:
-            std::fprintf(stderr, "Input sparse matrix format for GCNConvOp is not yet supported.\n");
+            std::fprintf(stderr, "Input sparse matrix format for GCNConvOp is not yet supported for initializing evaluation for as_sparse = true.\n");
             break;
     }
     this->b_tensor_slice = this->b_wrapper->get_data_ptr();
@@ -111,7 +111,7 @@ void GCNConvOp<T>::init_eval_as_dense(void) {
     dense_format = a->get_data_format();
     switch (dense_format) {
         case SPARSEMATRIX_FORMAT_HOST_DENSE:
-            std::fprintf(stderr, "Input sparse matrix format for GCNConvOp is not yet supported.\n");
+            std::fprintf(stderr, "Input sparse matrix format for GCNConvOp is not yet supported for initializing evaluation for as_sparse = false.\n");
             break;
 #if defined(_HAS_CUDA_)
         case SPARSEMATRIX_FORMAT_CUSPARSE_DENSE:
@@ -120,7 +120,7 @@ void GCNConvOp<T>::init_eval_as_dense(void) {
             break;
 #endif
         default:
-            std::fprintf(stderr, "Input sparse matrix format for GCNConvOp is not yet supported.\n");
+            std::fprintf(stderr, "Input sparse matrix format for GCNConvOp is not yet supported for initializing evaluation for as_sparse = false.\n");
             break;
     }
 }
@@ -140,7 +140,7 @@ void GCNConvOp<T>::init_grad_as_sparse(void) {
             break;
 #endif
         default:
-            std::fprintf(stderr, "Input sparse matrix format for GCNConvOp is not yet supported.\n");
+            std::fprintf(stderr, "Input sparse matrix format for GCNConvOp is not yet supported for initializing grad computation for as_sparse = true.\n");
             break;
     }
     this->grad_tensor_slice = this->grad_wrapper->get_data_ptr();
@@ -150,7 +150,7 @@ template <typename T>
 void GCNConvOp<T>::init_grad_as_dense(void) {
     switch (dense_format) {
         case SPARSEMATRIX_FORMAT_HOST_DENSE:
-            std::fprintf(stderr, "Input sparse matrix format for GCNConvOp is not yet supported.\n");
+            std::fprintf(stderr, "Input sparse matrix format for GCNConvOp is not yet supported for initializing grad computation for as_sparse = false.\n");
             break;
 #if defined(_HAS_CUDA_)
         case SPARSEMATRIX_FORMAT_CUSPARSE_DENSE:
@@ -158,7 +158,7 @@ void GCNConvOp<T>::init_grad_as_dense(void) {
             break;
 #endif
         default:
-            std::fprintf(stderr, "Input sparse matrix format for GCNConvOp is not yet supported.\n");
+            std::fprintf(stderr, "Input sparse matrix format for GCNConvOp is not yet supported for initializing grad computation for as_sparse = false.\n");
             break;
     }
 }
@@ -178,7 +178,7 @@ void GCNConvOp<T>::init_aTgrad_as_sparse(void) {
             break;
 #endif
         default:
-            std::fprintf(stderr, "Input sparse matrix format for GCNConvOp is not yet supported.\n");
+            std::fprintf(stderr, "Input sparse matrix format for GCNConvOp is not yet supported for initializing grad for as_sparse = true.\n");
             break;
     }
     this->aTgrad_tensor_slice = this->aTgrad_wrapper->get_data_ptr();
@@ -188,16 +188,16 @@ template <typename T>
 void GCNConvOp<T>::init_bTaTg_as_dense(void) {
     switch (dense_format) {
         case SPARSEMATRIX_FORMAT_HOST_DENSE:
-            std::fprintf(stderr, "Input sparse matrix format for GCNConvOp is not yet supported.\n");
+            std::fprintf(stderr, "Input sparse matrix format for GCNConvOp is not yet supported for initializing grad for as_sparse = false.\n");
             break;
 #if defined(_HAS_CUDA_)
         case SPARSEMATRIX_FORMAT_CUSPARSE_DENSE:
-            bTaTg_tensor = new Tensor<T>({n_samples, n_channel_in, n_channel_out}, this->mem_type);
+            bTaTg_tensor = new Tensor<T>({n_samples, n_channel_in * n_channel_out}, this->mem_type);
             ones = new Tensor<T>({1, n_samples}, {ONE, {}}, this->mem_type);
             break;
 #endif
         default:
-            std::fprintf(stderr, "Input sparse matrix format for GCNConvOp is not yet supported.\n");
+            std::fprintf(stderr, "Input sparse matrix format for GCNConvOp is not yet supported for initializing grad for as_sparse = false.\n");
             break;
     }
 }
@@ -232,8 +232,8 @@ GCNConvOp<T>::GCNConvOp(spMatrix::sparseMatrix<T>* a, Operation<T>* b, Operation
       aTgrad_settings(nullptr) {
     assert(a->get_memory_type() == b->get_memory_type());
     assert(OP_IS_SAME_MEMORY_TYPE(b, c));
-    assert(dynamic_cast<spMatrix::spMatrix_DENSE<T>*>(a) == nullptr &&
-           "Sparse matrix for GCNConvOp must not be of dense format");  //  todo: slow to dynamic_cast, better method?
+    // assert(dynamic_cast<spMatrix::spMatrix_DENSE<T>*>(a) == nullptr &&
+    //        "Sparse matrix for GCNConvOp must not be of dense format");  //  todo: slow to dynamic_cast, better method?
     assert(OP_IS_N_DIMENSIONAL(b, 3));
     assert(OP_IS_MATRIX(c));
     assert(a->get_shape(1) == b->get_output_shape(1));
@@ -331,10 +331,12 @@ Tensor<T>* GCNConvOp<T>::_eval(bool recompute) {
             init_eval_as_dense();
         }
 #if defined(_HAS_CUDA_)
+        //  compute c_tensor^T * b_tensor_slice^T, stored in cTbT_tensor in column-major (so in row-major it is b_slice * c)
         this->cublasGemmStridedBatchedWrap(false, false, n_channel_out, n_vert_in, n_channel_in, const_one,
                                            c_tensor->get_ptr(), n_channel_out, 0, b_tensor->get_ptr(), n_channel_in,
                                            input_sample_size, const_zero, cTbT_tensor->get_ptr(), n_channel_out,
                                            n_vert_in * n_channel_out, n_samples);
+        //  compute cTbT_tensor * a^T, stored in out in column-major (so in row-major it is a * b_slice * c)
         this->cublasGemmStridedBatchedWrap(
             false, false, n_channel_out, n_vert_out, n_vert_in, const_one, cTbT_tensor->get_ptr(), n_channel_out,
             n_channel_out * n_vert_in, AS_TYPE(spMatrix::spMatrix_DENSE<T>*, a)->get_data_ptr()->get_ptr(), n_vert_in,
@@ -387,12 +389,14 @@ Tensor<T>* GCNConvOp<T>::_grad(Operation<T>* consumer, Operation<T>* var, Tensor
             if (gTa_tensor == nullptr) {
                 init_grad_as_dense();
             }
+            //  compute grad^T * (a^T)^T , stored in gTa_tensor in column-major (so in row-major it is a^T * grad)
             this->cublasGemmStridedBatchedWrap(
                 false, true, n_channel_out, n_vert_in, n_vert_out, const_one, grad->get_ptr(), n_channel_out,
                 output_sample_size, AS_TYPE(spMatrix::spMatrix_DENSE<T>*, a)->get_data_ptr()->get_ptr(), n_vert_in, 0,
                 const_zero, gTa_tensor->get_ptr(), n_channel_out, n_channel_out * n_vert_in, n_samples);
+            //  compute (c^T)^T * gTa , stored in out in column-major (so in row-major it is a^T * grad * c^T)
             this->cublasGemmStridedBatchedWrap(true, false, n_channel_in, n_vert_in, n_channel_out, const_one,
-                                               c_tensor->get_ptr(), n_channel_in, 0, gTa_tensor->get_ptr(),
+                                               c_tensor->get_ptr(), n_channel_out, 0, gTa_tensor->get_ptr(),
                                                n_channel_out, n_channel_out * n_vert_in, const_zero, out->get_ptr(),
                                                n_channel_in, input_sample_size, n_samples);
 #endif
@@ -430,17 +434,18 @@ Tensor<T>* GCNConvOp<T>::_grad(Operation<T>* consumer, Operation<T>* var, Tensor
             if (bTaTg_tensor == nullptr) {
                 init_bTaTg_as_dense();
             }
+            //  compute grad^T * (a^T)^T , stored in gTa_tensor in column-major (so in row-major it is a^T * grad)
             this->cublasGemmStridedBatchedWrap(
                 false, true, n_channel_out, n_vert_in, n_vert_out, const_one, grad->get_ptr(), n_channel_out,
                 output_sample_size, AS_TYPE(spMatrix::spMatrix_DENSE<T>*, a)->get_data_ptr()->get_ptr(), n_vert_in, 0,
                 const_zero, gTa_tensor->get_ptr(), n_channel_out, n_channel_out * n_vert_in, n_samples);
+            //  compute gTa * (b_slice^T)^T , stored in bTaTg_tensor in column-major (so in row-major it is b^T * a^T * grad)
             this->cublasGemmStridedBatchedWrap(
-                false, true, n_channel_out, n_channel_in, n_vert_in, const_one, bTaTg_tensor->get_ptr(), n_channel_out,
+                false, true, n_channel_out, n_channel_in, n_vert_in, const_one, gTa_tensor->get_ptr(), n_channel_out,
                 n_channel_out * n_vert_in, b_tensor->get_ptr(), n_channel_in, input_sample_size, const_zero,
                 bTaTg_tensor->get_ptr(), n_channel_out, n_channel_in * n_channel_out, n_samples);
-            bTaTg_tensor->reshape({n_sample, n_channel_in * n_channel_out});
+            //  reduced with respect to the sample axis (0-th)
             math::matmul<T>(const_one, false, ones, false, bTaTg_tensor, const_zero, out);
-            bTaTg_tensor->reshape({n_sample, n_channel_in, n_channel_out});
 #endif
         }
     }
@@ -454,7 +459,7 @@ template class GCNConvOp<double>;
 template <typename T>
 GCNConvOp<T>* gcnconv(spMatrix::sparseMatrix<T>* a, Operation<T>* b, Operation<T>* c, bool as_sparse, bool copy,
                       bool needs_grad) {
-    return new GCNConvOp<T>(a, b, c, copy, needs_grad);
+    return new GCNConvOp<T>(a, b, c, as_sparse, copy, needs_grad);
 }
 template GCNConvOp<int>* gcnconv(spMatrix::sparseMatrix<int>*, Operation<int>*, Operation<int>*, bool, bool, bool);
 template GCNConvOp<float>* gcnconv(spMatrix::sparseMatrix<float>*, Operation<float>*, Operation<float>*, bool, bool,

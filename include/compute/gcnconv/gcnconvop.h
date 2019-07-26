@@ -24,18 +24,24 @@ namespace op {
 template <typename T>
 class GCNConvOp : public Operation<T> {
    public:
-    GCNConvOp(spMatrix::sparseMatrix<T>* a, Operation<T>* b, Operation<T>* c, bool copy = true, bool needs_grad = true);
+    GCNConvOp(spMatrix::sparseMatrix<T>* a, Operation<T>* b, Operation<T>* c, bool as_sparse = true, bool copy = true, bool needs_grad = true);
     ~GCNConvOp(void);
     inline std::string to_string(void) {
         return "GCNCONV( " + a->to_string() + " * " + b->to_string() + " * " + c->to_string() + " )";
     }
 
    private:
+    static void cublasGemmStridedBatchedWrap(bool trans_A, bool trans_B, int m, int n, int k, T alpha, T* A, int lda,
+                                             long long strideA, T* B, int ldb, long long strideB, T beta, T* C, int ldc,
+                                             long long strideC, int batch);
     const T const_one = (T) 1;
     const T const_zero = (T) 0;
-    inline void init_eval(void);
-    inline void init_grad(void);
-    inline void init_aTgrad(void);
+    inline void init_eval_as_sparse(void);
+    inline void init_eval_as_dense(void);
+    inline void init_grad_as_sparse(void);
+    inline void init_grad_as_dense(void);
+    inline void init_aTgrad_as_sparse(void);
+    inline void init_bTaTg_as_dense(void);
 #if defined(_HAS_CUDA_)
 #if (CUDART_VERSION >= 100100)
     inline void init_cusparse_settings(cusparseSpMMAlg_t alg);
@@ -44,6 +50,7 @@ class GCNConvOp : public Operation<T> {
 #endif
 
    protected:
+    bool as_sparse;
     unsigned n_samples;
     unsigned n_vert_in, n_vert_out;
     unsigned n_channel_in, n_channel_out;
@@ -66,6 +73,11 @@ class GCNConvOp : public Operation<T> {
     Tensor<T>* aTgrad_tensor_slice;               //  stores the results of spgemm(a^T, grad_tensor_slice)
     spMatrix::spMatrix_DENSE<T>* aTgrad_wrapper;  //  sparse matrix object connected to aTgrad_tensor_slice
     Tensor<T>* aTgradcT_tensor_slice;             //  stores the result of matmul(aTgrad_tensor_slice, c_tensor)
+	//  intermediate result for cublas<T>gemmStridedBatched
+    Tensor<T>* cTbT_tensor;
+    Tensor<T>* gTa_tensor;
+    Tensor<T>* bTaTg_tensor;
+    Tensor<T>* ones;
 
     spMatrix_format dense_format;  //  format to store dense matrices for spgemm
     void* ab_settings;
@@ -76,7 +88,8 @@ class GCNConvOp : public Operation<T> {
 };
 
 template <typename T>
-GCNConvOp<T>* gcnconv(spMatrix::sparseMatrix<T>* a, Operation<T>* b, Operation<T>* c, bool copy = true,
+GCNConvOp<T>* gcnconv(spMatrix::sparseMatrix<T>* a, Operation<T>* b, Operation<T>* c,
+                      bool as_sparse = true, bool copy = true,
                       bool needs_grad = true);
 
 }  //  namespace op

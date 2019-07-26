@@ -19,6 +19,7 @@
 #include <cuda.h>
 #include <cuda_runtime_api.h>
 #include <curand.h>
+#include <cublas_v2.h>
 #include "cudnn.h"
 #include "cusparse.h"
 
@@ -45,6 +46,14 @@ inline void cudnnAssert(cudnnStatus_t code, const char *file, int line, bool abo
 inline void curandAssert(curandStatus_t code, const char *file, int line, bool abort = true) {
     if (code != CURAND_STATUS_SUCCESS) {
         fprintf(stderr, "CuRandAssert: %d %s %d\n", code, file, line);
+    }
+}
+
+#define cublasErrchk(ans) \
+    { cublasAssert((ans), __FILE__, __LINE__); }
+inline void cublasAssert(cublasStatus_t code, const char *file, int line, bool abort = true) {
+    if (code != CUBLAS_STATUS_SUCCESS) {
+        fprintf(stderr, "CuBlasAssert: %d %s %d\n", code, file, line);
     }
 }
 

@@ -1,8 +1,8 @@
 #pragma once
 
 #include <vector>
-#include "layer/layers.h"
 #include "compute/operation.h"
+#include "layer/layers.h"
 
 namespace magmadnn {
 namespace layer {
@@ -11,8 +11,8 @@ namespace layer {
 // using vectorOfLayer = std::vector< layer::Layer<T>* >;
 
 template <typename T>
-class layerContainer : public std::vector<Layer<T>* > {
-public:
+class layerContainer : public std::vector<Layer<T> *> {
+   public:
     layerContainer(InputLayer<T> *inputlayer);
     layerContainer(op::Operation<T> *var);
     ~layerContainer();
@@ -22,9 +22,9 @@ public:
     inline op::Operation<T> *tail() { return this->getLastLayerOutput(); };
 
     layerContainer<T> &appendLayer(Layer<T> *layerPtr);
-
+    void summary(void) const;
     void destroyLayers();
 };
 
-}   // layer
-}   // magmadnn
+}  // namespace layer
+}  // namespace magmadnn
